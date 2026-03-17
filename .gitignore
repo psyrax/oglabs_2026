@@ -1,9 +1,13 @@
 output/
 __pycache__/
 *.pyc
+*.pyo
 .env
 *.egg-info/
 .pytest_cache/
+venv/
+.venv/
+.claude/
 photos/.processed_manifest.json
 drafts/.images_manifest.json
 .superpowers/
