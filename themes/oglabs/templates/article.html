@@ -16,11 +16,16 @@
 
   <div class="photo-view">
     <div class="photo-view__image-side">
-      <img src="{{ SITEURL }}/{{ article.photo }}" alt="{{ article.title }}">
+      <a href="{{ SITEURL }}/{{ article.photo }}" target="_blank" rel="noopener" title="Ver imagen original">
+        <img src="{{ SITEURL }}/{{ article.photo }}" alt="{{ article.title }}">
+      </a>
     </div>
     <div class="photo-view__text-side">
       <div class="photo-view__description">
         {{ article.content }}
+      </div>
+      <div class="photo-view__original">
+        <a href="{{ SITEURL }}/{{ article.photo }}" target="_blank" rel="noopener">ver imagen completa ↗</a>
       </div>
       <div class="photo-nav">
         {% if prev_photo %}

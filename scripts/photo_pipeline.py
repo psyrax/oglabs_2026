@@ -1,5 +1,7 @@
 import argparse
+import base64
 import json
+import os
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -77,7 +79,38 @@ def optimize_photo(src: Path, dst: Path) -> None:
         img.save(dst, "JPEG", quality=92, optimize=True)
 
 
-def write_article(photo_path: Path, web_path: Path, description: str, exif: dict) -> None:
+OLLAMA_REMOTE = "http://192.168.50.113:11434"
+PROMPT_TEXT_PATH = Path("prompts/photo_memory.txt")
+
+
+def call_stored_prompt(prompt_id: str, image_path: str) -> str:
+    from openai import OpenAI
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+    with open(image_path, "rb") as f:
+        img_data = base64.b64encode(f.read()).decode()
+    response = client.responses.create(
+        prompt={"id": prompt_id},
+        input=[{
+            "role": "user",
+            "content": [{"type": "input_image", "image_url": f"data:image/jpeg;base64,{img_data}"}],
+        }],
+    )
+    return response.output_text
+
+
+def call_ollama_prompt(model: str, prompt_text: str, image_path: str, think: bool = True) -> str:
+    with open(image_path, "rb") as f:
+        img_data = base64.b64encode(f.read()).decode()
+    payload: dict = {"model": model, "prompt": prompt_text, "images": [img_data], "stream": False}
+    if not think:
+        payload["think"] = False
+    resp = requests.post(f"{OLLAMA_REMOTE}/api/generate", json=payload)
+    resp.raise_for_status()
+    return resp.json()["response"]
+
+
+def write_article(photo_path: Path, web_path: Path, description: str, extra: str,
+                  gemma: str, lfm: str, exif: dict) -> None:
     ARTICLES_DIR.mkdir(parents=True, exist_ok=True)
     slug = photo_path.stem
     date_str = exif.get("date") or ""
@@ -97,16 +130,25 @@ def write_article(photo_path: Path, web_path: Path, description: str, exif: dict
     if exif.get("speed"):
         meta_lines.append(f"- **Velocidad:** {exif['speed']}")
 
+    meta_block = ("\n".join(meta_lines) + "\n\n") if meta_lines else ""
+    disclaimer = "_Lo siguiente es una memoria falsa creada por un LLM a partir de la imagen._"
     content = (
         f"Title: {slug}\n"
         f"Date: {date_fmt}\n"
         f"Category: photos\n"
         f"Slug: {slug}\n"
-        f"Photo: {{static}}/photos/images/{web_path.name}\n\n"
+        f"Photo: photos/images/{web_path.name}\n\n"
         f"{description}\n\n"
-        + ("\n".join(meta_lines) if meta_lines else "")
+        f"{meta_block}"
+        f"{disclaimer}\n\n"
+        f"*gpt-4o*\n\n{extra}\n\n"
+        f"*gemma3:4b*\n\n{gemma}\n\n"
+        f"*lfm2.5-thinking*\n\n{lfm}\n"
     )
     (ARTICLES_DIR / f"{slug}.md").write_text(content)
+
+
+STORED_PROMPT_ID = os.getenv("PROMPT_ID", "")
 
 
 def process_photo(path: Path, llm_backend: Optional[str]) -> None:
@@ -116,7 +158,14 @@ def process_photo(path: Path, llm_backend: Optional[str]) -> None:
     optimize_photo(path, web_path)
     client = get_client(llm_backend)
     description = client.complete(DESCRIPTION_PROMPT, image_path=str(web_path))
-    write_article(path, web_path, description, exif)
+    print(f"    Calling stored prompt (OpenAI)...")
+    extra = call_stored_prompt(STORED_PROMPT_ID, str(web_path))
+    prompt_text = PROMPT_TEXT_PATH.read_text()
+    print(f"    Calling gemma3:4b (Ollama)...")
+    gemma = call_ollama_prompt("gemma3:4b", prompt_text, str(web_path))
+    print(f"    Calling lfm2.5-thinking:latest (Ollama)...")
+    lfm = call_ollama_prompt("lfm2.5-thinking:latest", prompt_text, str(web_path), think=False)
+    write_article(path, web_path, description, extra, gemma, lfm, exif)
     print(f"  → content/photos/{path.stem}.md")
 
 

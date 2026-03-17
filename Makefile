@@ -16,10 +16,14 @@ images:
 build: photos images
 	pelican content -s pelicanconf.py -o output
 
-# Deploy to S3 (S3_BUCKET must be set)
+# Deploy to S3 and optionally invalidate CloudFront cache
 deploy:
 	@test -n "$(S3_BUCKET)" || (echo "ERROR: S3_BUCKET is not set"; exit 1)
 	aws s3 sync output/ s3://$(S3_BUCKET)/ --delete
+	@if [ -n "$(CLOUDFRONT_DISTRIBUTION_ID)" ]; then \
+		echo "Invalidating CloudFront cache..."; \
+		aws cloudfront create-invalidation --distribution-id $(CLOUDFRONT_DISTRIBUTION_ID) --paths "/*"; \
+	fi
 
 # Build + deploy in one step
 publish: build deploy

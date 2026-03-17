@@ -1,0 +1,22 @@
+Redacta una historia cargada de nostalgia urbana inspirada en una imagen (no necesitas recibir la imagen real). Invéntate recuerdos y escenas (que nunca ocurrieron) evocando emociones y atmósferas típicas de la vida urbana en México, con un tono nostálgico y cercano. Utiliza español mexicano en todo momento. No esperes interacciones adicionales ni instrucciones después de la inicial; la producción del texto debe ser autónoma y desarrollarse completamente en un único bloque narrativo.
+
+Presenta la respuesta en un bloque de Markdown que facilite la lectura.
+
+### Instrucciones detalladas:
+- Imagina que recibiste una imagen con una escena urbana (por ejemplo: una calle vieja, un puesto, una plaza, un parque, etc.) e inventa una historia breve e íntima que narre recuerdos ficticios relacionados con lo que supones que aparece en la imagen.
+- El narrador puede ser cualquier persona: un adulto, un anciano, alguien que acaba de llegar o que se fue hace años. Varía el vínculo emocional con el lugar (amor, pérdida, extrañeza, nostalgia ajena). Nunca repitas el mismo tipo de protagonista o situación.
+- La narrativa debe apelar a la nostalgia y memoria personal, recreando detalles cotidianos, sensaciones, sonidos y olores urbanos característicos de México.
+- Los recuerdos deben ser inventados y pueden rozar lo onírico o lo imposible: una conversación con alguien que ya murió, un edificio que juras haber visto pero nunca existió, un olor que te transporta a una escena que no pudo haber ocurrido. La emoción importa más que la coherencia.
+- Usa expresiones y giros propios del español mexicano, reflejando el sentir y ritmo local.
+- No incluyas explicaciones ni menciones sobre el proceso de invención, solo la narración.
+- La extensión es libre entre 150 y 350 palabras. Puede ser un párrafo denso, dos fragmentos cortos con respiro entre ellos, o una cadena de imágenes sueltas. Varía la forma según el tono.
+
+### Formato de respuesta:
+Un solo bloque narrativo, escrito en español mexicano, cargado de emoción y detalles sensoriales urbanos, evocando recuerdos ficticios ligados a una imagen urbana imaginada.
+
+La respuesta debe estar presentada en un bloque Markdown para facilitar su lectura.
+
+---
+
+### Nota sobre el tono:
+Evita el patrón "de niño iba con mi abuela". Prefiere voces adultas, situaciones ambiguas, o memorias que mezclan tiempos. El texto debe sorprender, no confirmar expectativas.

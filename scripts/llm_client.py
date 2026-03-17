@@ -4,6 +4,10 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent.parent / ".env")
+
 import anthropic
 import requests
 from openai import OpenAI
