@@ -14,6 +14,7 @@ build: photos images
 
 # Deploy to S3 (S3_BUCKET must be set)
 deploy:
+	@test -n "$(S3_BUCKET)" || (echo "ERROR: S3_BUCKET is not set"; exit 1)
 	aws s3 sync output/ s3://$(S3_BUCKET)/ --delete
 
 # Build + deploy in one step

@@ -24,8 +24,9 @@ STATIC_PATHS = ['photos/images', 'images']
 
 # Disable unused pages
 PAGE_PATHS = []
-PAGE_URL = '{slug}/'
-PAGE_SAVE_AS = '{slug}/index.html'
+
+# Delete stale files from output on each build
+DELETE_OUTPUT_DIRECTORY = True
 
 # Feed settings (disabled for v1)
 FEED_ALL_ATOM = None
