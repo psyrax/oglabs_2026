@@ -1,0 +1,6 @@
+pelican[markdown]>=4.9
+Pillow>=10.0
+piexif>=1.1
+anthropic>=0.25
+openai>=1.30
+requests>=2.31
