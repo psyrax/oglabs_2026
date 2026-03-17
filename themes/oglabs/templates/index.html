@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% set photo_articles = articles | selectattr("category.slug", "equalto", "photos") | sort(attribute="date", reverse=True) | list %}
+{% if photo_articles %}
+  {% set hero = photo_articles[0] %}
+  <section class="hero">
+    <img class="hero-image" src="{{ SITEURL }}/{{ hero.photo }}" alt="{{ hero.title }}">
+    <div class="hero-overlay"></div>
+    <div class="hero-caption">
+      <p>{{ hero.summary }}</p>
+      <a class="view-photo" href="{{ SITEURL }}/{{ hero.url }}">Ver foto →</a>
+    </div>
+  </section>
+{% else %}
+  <section class="hero" style="align-items:center;justify-content:center">
+    <div style="text-align:center">
+      <p style="color:var(--text-dim);font-size:0.9rem">Aún no hay fotos publicadas.</p>
+    </div>
+  </section>
+{% endif %}
+{% endblock %}
