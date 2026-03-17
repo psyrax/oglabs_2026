@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% set active_section = category.slug %}
+
+{% block title %}{{ category.name }} — {{ SITENAME }}{% endblock %}
+
+{% block content %}
+{% if category.slug == 'photos' %}
+  {# Photos category: redirect to most recent photo #}
+  {% set sorted = articles | sort(attribute="date", reverse=True) | list %}
+  {% if sorted %}
+    <p style="padding:8rem 2rem;text-align:center;color:var(--text-dim)">
+      Redirigiendo a la última foto…
+      <a href="{{ SITEURL }}/{{ sorted[0].url }}">click aquí</a>
+    </p>
+    <script>window.location.replace("{{ SITEURL }}/{{ sorted[0].url }}");</script>
+  {% endif %}
+{% else %}
+  <div class="post-list">
+    <p class="post-list__title">{{ category.name }}</p>
+    {% for article in articles | sort(attribute="date", reverse=True) %}
+    <div class="post-list__item">
+      <div class="post-list__item-header">
+        <a class="post-list__item-title" href="{{ SITEURL }}/{{ article.url }}">{{ article.title }}</a>
+        <span class="post-list__item-date">{{ article.date.strftime('%b %Y') }}</span>
+      </div>
+      {% if article.summary %}
+      <p class="post-list__item-excerpt">{{ article.summary | striptags | truncate(160) }}</p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}
