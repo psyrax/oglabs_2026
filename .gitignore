@@ -1,0 +1,9 @@
+output/
+__pycache__/
+*.pyc
+.env
+*.egg-info/
+.pytest_cache/
+photos/.processed_manifest.json
+drafts/.images_manifest.json
+.superpowers/
