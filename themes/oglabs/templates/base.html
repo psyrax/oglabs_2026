@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ SITENAME }}{% endblock %}</title>
+  <link rel="stylesheet" href="{{ SITEURL }}/theme/css/style.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <a class="site-name" href="{{ SITEURL }}/">{{ SITENAME }}</a>
+    <ul>
+      <li><a href="{{ SITEURL }}/blog/" {% if active_section == 'blog' %}class="active"{% endif %}>blog</a></li>
+      <li><a href="{{ SITEURL }}/projects/" {% if active_section == 'projects' %}class="active"{% endif %}>proyectos</a></li>
+      <li><a href="{{ SITEURL }}/photos/" {% if active_section == 'photos' %}class="active"{% endif %}>fotos</a></li>
+    </ul>
+  </nav>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
