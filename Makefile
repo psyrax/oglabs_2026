@@ -1,3 +1,7 @@
+# Load .env if it exists
+-include .env
+export
+
 .PHONY: photos images build deploy publish clean
 
 # Process new gallery photos (skips already-processed via manifest)
