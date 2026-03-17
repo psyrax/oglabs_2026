@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% set active_section = article.category.slug %}
+
+{% block title %}{{ article.title }} — {{ SITENAME }}{% endblock %}
+
+{% block content %}
+{% if article.category.slug == 'photos' %}
+  {# --- Photo single view --- #}
+  {% set photo_articles = articles | selectattr("category.slug", "equalto", "photos") | sort(attribute="date", reverse=True) | list %}
+  {% set ns = namespace(idx=0) %}
+  {% for a in photo_articles %}
+    {% if a.slug == article.slug %}{% set ns.idx = loop.index0 %}{% endif %}
+  {% endfor %}
+  {% set prev_photo = photo_articles[ns.idx + 1] if ns.idx + 1 < photo_articles | length else None %}
+  {% set next_photo = photo_articles[ns.idx - 1] if ns.idx > 0 else None %}
+
+  <div class="photo-view">
+    <div class="photo-view__image-side">
+      <img src="{{ SITEURL }}/{{ article.photo }}" alt="{{ article.title }}">
+    </div>
+    <div class="photo-view__text-side">
+      <div class="photo-view__description">
+        {{ article.content }}
+      </div>
+      <div class="photo-nav">
+        {% if prev_photo %}
+          <a href="{{ SITEURL }}/{{ prev_photo.url }}">← anterior</a>
+        {% else %}
+          <span></span>
+        {% endif %}
+        {% if next_photo %}
+          <a href="{{ SITEURL }}/{{ next_photo.url }}">siguiente →</a>
+        {% else %}
+          <span></span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+{% else %}
+  {# --- Blog / Project post --- #}
+  <article class="article">
+    <header class="article__header">
+      <h1 class="article__title">{{ article.title }}</h1>
+      <p class="article__date">{{ article.date.strftime('%d %b %Y') }}</p>
+    </header>
+    <div class="article__content">
+      {{ article.content }}
+    </div>
+  </article>
+{% endif %}
+{% endblock %}
