@@ -131,7 +131,11 @@ def write_article(photo_path: Path, web_path: Path, description: str, extra: str
         meta_lines.append(f"- **Velocidad:** {exif['speed']}")
 
     meta_block = ("\n".join(meta_lines) + "\n\n") if meta_lines else ""
-    disclaimer = "_Lo siguiente es una memoria falsa creada por un LLM a partir de la imagen._"
+    disclaimer = (
+        "_Lo siguiente es una memoria falsa generada por tres modelos de lenguaje (gpt-4o, gemma3:4b y lfm2.5-thinking) "
+        "a partir de la imagen, usando [este prompt](https://github.com/psyrax/oglabs_2026/blob/master/prompts/photo_memory.txt). "
+        "Ninguno de los recuerdos ocurrió._"
+    )
     content = (
         f"Title: {slug}\n"
         f"Date: {date_fmt}\n"

@@ -22,6 +22,18 @@ body {
 a { color: var(--text); text-decoration: none; }
 a:hover { color: #fff; }
 
+.article__content a,
+.photo-view__description a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--text-dim);
+}
+
+.article__content a:hover,
+.photo-view__description a:hover {
+  text-decoration-color: var(--text);
+}
+
 /* --- Navigation --- */
 .site-nav {
   position: fixed;
