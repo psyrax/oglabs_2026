@@ -2,18 +2,28 @@
 {% set active_section = category.slug %}
 
 {% block title %}{{ category.name }} — {{ SITENAME }}{% endblock %}
+{% block og_title %}{{ category.name }} — {{ SITENAME }}{% endblock %}
+{% block og_meta %}
+  {% if category.slug == 'photos' %}
+    {% set first = articles | sort(attribute="date", reverse=True) | first %}
+    {% if first %}
+      <meta property="og:image" content="{{ SITEURL }}/{{ first.photo }}">
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:image" content="{{ SITEURL }}/{{ first.photo }}">
+    {% endif %}
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 {% if category.slug == 'photos' %}
-  {# Photos category: redirect to most recent photo #}
   {% set sorted = articles | sort(attribute="date", reverse=True) | list %}
-  {% if sorted %}
-    <p style="padding:8rem 2rem;text-align:center;color:var(--text-dim)">
-      Redirigiendo a la última foto…
-      <a href="{{ SITEURL }}/{{ sorted[0].url }}">click aquí</a>
-    </p>
-    <script>window.location.replace("{{ SITEURL }}/{{ sorted[0].url }}");</script>
-  {% endif %}
+  <div class="contact-sheet">
+    {% for article in sorted %}
+    <a class="contact-sheet__cell" href="{{ SITEURL }}/{{ article.url }}">
+      <img src="{{ SITEURL }}/{{ article.photo }}" alt="{{ article.title }}" loading="lazy">
+    </a>
+    {% endfor %}
+  </div>
 {% else %}
   <div class="post-list">
     <p class="post-list__title">{{ category.name }}</p>

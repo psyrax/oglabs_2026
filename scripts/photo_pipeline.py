@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import piexif
+import requests
 from PIL import Image
 
 # Allow running from project root or scripts/
@@ -48,21 +49,48 @@ def new_photos(manifest: set) -> list:
     ]
 
 
+def _decode_exif_value(val):
+    if isinstance(val, bytes):
+        return val.decode(errors="replace").strip("\x00")
+    if isinstance(val, tuple) and len(val) == 2 and val[1] != 0:
+        return f"{val[0]}/{val[1]}"
+    return val
+
+
 def extract_exif(path: Path) -> dict:
     try:
         data = piexif.load(str(path))
         exif = data.get("Exif", {})
         ifd0 = data.get("0th", {})
+        gps = data.get("GPS", {})
+
+        # Structured fields used internally
         date_raw = exif.get(piexif.ExifIFD.DateTimeOriginal)
         camera_raw = ifd0.get(piexif.ImageIFD.Model, b"")
         aperture_raw = exif.get(piexif.ExifIFD.FNumber)
         speed_raw = exif.get(piexif.ExifIFD.ExposureTime)
+
+        # All readable fields for display
+        label_map = {
+            "0th": {v: k for k, v in piexif.ImageIFD.__dict__.items() if isinstance(v, int)},
+            "Exif": {v: k for k, v in piexif.ExifIFD.__dict__.items() if isinstance(v, int)},
+            "GPS": {v: k for k, v in piexif.GPSIFD.__dict__.items() if isinstance(v, int)},
+        }
+        all_fields = {}
+        for ifd_name, ifd_data in [("0th", ifd0), ("Exif", exif), ("GPS", gps)]:
+            for tag, val in ifd_data.items():
+                label = label_map[ifd_name].get(tag, str(tag))
+                decoded = _decode_exif_value(val)
+                if decoded not in (None, "", b""):
+                    all_fields[label] = decoded
+
         return {
             "date": date_raw.decode() if date_raw else None,
             "camera": camera_raw.decode(errors="replace").strip("\x00") if camera_raw else None,
             "iso": exif.get(piexif.ExifIFD.ISOSpeedRatings),
             "aperture": aperture_raw[0] / aperture_raw[1] if aperture_raw else None,
             "speed": f"{speed_raw[0]}/{speed_raw[1]}s" if speed_raw else None,
+            "all_fields": all_fields,
         }
     except Exception:
         return {}
@@ -98,14 +126,16 @@ def call_stored_prompt(prompt_id: str, image_path: str) -> str:
     return response.output_text
 
 
-def call_ollama_prompt(model: str, prompt_text: str, image_path: str, think: bool = True) -> str:
-    with open(image_path, "rb") as f:
-        img_data = base64.b64encode(f.read()).decode()
-    payload: dict = {"model": model, "prompt": prompt_text, "images": [img_data], "stream": False}
+def call_ollama_prompt(model: str, prompt_text: str, image_path: Optional[str] = None, think: bool = True) -> str:
+    payload: dict = {"model": model, "prompt": prompt_text, "stream": False}
+    if image_path:
+        with open(image_path, "rb") as f:
+            payload["images"] = [base64.b64encode(f.read()).decode()]
     if not think:
         payload["think"] = False
     resp = requests.post(f"{OLLAMA_REMOTE}/api/generate", json=payload)
-    resp.raise_for_status()
+    if not resp.ok:
+        raise RuntimeError(f"Ollama {model} error {resp.status_code}: {resp.text}")
     return resp.json()["response"]
 
 
@@ -120,19 +150,14 @@ def write_article(photo_path: Path, web_path: Path, description: str, extra: str
     except ValueError:
         date_fmt = datetime.fromtimestamp(photo_path.stat().st_mtime).strftime("%Y-%m-%d")
 
-    meta_lines = []
-    if exif.get("camera"):
-        meta_lines.append(f"- **Cámara:** {exif['camera']}")
-    if exif.get("iso"):
-        meta_lines.append(f"- **ISO:** {exif['iso']}")
-    if exif.get("aperture") is not None:
-        meta_lines.append(f"- **Apertura:** f/{exif['aperture']:.1f}")
-    if exif.get("speed"):
-        meta_lines.append(f"- **Velocidad:** {exif['speed']}")
+    meta_lines = [
+        f"- **{k}:** {v}"
+        for k, v in exif.get("all_fields", {}).items()
+    ]
 
     meta_block = ("\n".join(meta_lines) + "\n\n") if meta_lines else ""
     disclaimer = (
-        "_Lo siguiente es una memoria falsa generada por tres modelos de lenguaje (gpt-4o, gemma3:4b y lfm2.5-thinking) "
+        "_Lo siguiente es una memoria falsa generada por tres modelos de lenguaje (gpt-4o, gemma4 y lfm2.5-thinking) "
         "a partir de la imagen, usando [este prompt](https://github.com/psyrax/oglabs_2026/blob/master/prompts/photo_memory.txt). "
         "Ninguno de los recuerdos ocurrió._"
     )
@@ -146,7 +171,7 @@ def write_article(photo_path: Path, web_path: Path, description: str, extra: str
         f"{meta_block}"
         f"{disclaimer}\n\n"
         f"*gpt-4o*\n\n{extra}\n\n"
-        f"*gemma3:4b*\n\n{gemma}\n\n"
+        f"*gemma4*\n\n{gemma}\n\n"
         f"*lfm2.5-thinking*\n\n{lfm}\n"
     )
     (ARTICLES_DIR / f"{slug}.md").write_text(content)
@@ -165,10 +190,11 @@ def process_photo(path: Path, llm_backend: Optional[str]) -> None:
     print(f"    Calling stored prompt (OpenAI)...")
     extra = call_stored_prompt(STORED_PROMPT_ID, str(web_path))
     prompt_text = PROMPT_TEXT_PATH.read_text()
-    print(f"    Calling gemma3:4b (Ollama)...")
-    gemma = call_ollama_prompt("gemma3:4b", prompt_text, str(web_path))
+    print(f"    Calling gemma4:e4b (Ollama)...")
+    gemma = call_ollama_prompt("gemma4:e4b", prompt_text, str(web_path))
     print(f"    Calling lfm2.5-thinking:latest (Ollama)...")
-    lfm = call_ollama_prompt("lfm2.5-thinking:latest", prompt_text, str(web_path), think=False)
+    lfm_prompt = f"Descripción de la imagen:\n{description}\n\n---\n\n{prompt_text}"
+    lfm = call_ollama_prompt("lfm2.5-thinking:latest", lfm_prompt, image_path=None, think=False)
     write_article(path, web_path, description, extra, gemma, lfm, exif)
     print(f"  → content/photos/{path.stem}.md")
 

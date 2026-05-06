@@ -58,7 +58,7 @@ class ClaudeClient(LLMClient):
 
 
 class OpenAIClient(LLMClient):
-    def __init__(self, model: str = "gpt-4o"):
+    def __init__(self, model: str = "gpt-5.4"):
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.model = model
 

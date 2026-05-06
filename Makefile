@@ -2,7 +2,7 @@
 -include .env
 export
 
-.PHONY: photos images build deploy publish clean
+.PHONY: photos images build deploy publish clean strip-fences
 
 # Process new gallery photos (skips already-processed via manifest)
 photos:
@@ -12,8 +12,12 @@ photos:
 images:
 	python scripts/optimize_images.py
 
-# Full build: process photos + images, then run Pelican
-build: photos images
+# Strip ```markdown fences and <think> tags from generated content
+strip-fences:
+	python scripts/strip_fences.py
+
+# Full build: process photos + images, strip LLM artifacts, then run Pelican
+build: photos images strip-fences
 	pelican content -s pelicanconf.py -o output
 
 # Deploy to S3 and optionally invalidate CloudFront cache

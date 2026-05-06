@@ -1,5 +1,7 @@
+import os
+
 SITENAME = 'oglabs'
-SITEURL = ''
+SITEURL = os.getenv('SITEURL', '')
 
 PATH = 'content'
 

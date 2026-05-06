@@ -2,6 +2,21 @@
 {% set active_section = article.category.slug %}
 
 {% block title %}{{ article.title }} — {{ SITENAME }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ article.title }} — {{ SITENAME }}{% endblock %}
+{% block og_meta %}
+  <meta property="og:url" content="{{ SITEURL }}/{{ article.url }}">
+  {% set desc = article.content | striptags | truncate(200) %}
+  <meta property="og:description" content="{{ desc }}">
+  <meta name="twitter:description" content="{{ desc }}">
+  {% if article.category.slug == 'photos' %}
+    <meta property="og:image" content="{{ SITEURL }}/{{ article.photo }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="{{ SITEURL }}/{{ article.photo }}">
+  {% else %}
+    <meta name="twitter:card" content="summary">
+  {% endif %}
+{% endblock %}
 
 {% block content %}
 {% if article.category.slug == 'photos' %}
