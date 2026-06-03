@@ -140,10 +140,18 @@ def read_post(path: str) -> dict:
     if not path.endswith(".md"):
         raise ValueError("Only .md files are readable.")
     parts = Path(path).parts
-    if not parts or parts[0] not in CONTENT_BASES:
-        raise ValueError("Path must be under drafts/ or content/.")
+    if (not parts or parts[0] not in CONTENT_BASES
+            or ".." in parts or any(Path(x).is_absolute() for x in parts)):
+        raise ValueError(
+            "Path must be a relative .md path under drafts/ or content/."
+        )
+    base = _repo_path(parts[0])
     p = _repo_path(*parts)
-    if not p.exists() or not p.is_file():
+    try:
+        p.relative_to(base)
+    except ValueError:
+        raise ValueError(f"Path escapes allowed base: {path}")
+    if not p.is_file():
         raise ValueError(f"File not found: {path}")
     return _parse_frontmatter(p.read_text())
 

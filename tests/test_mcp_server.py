@@ -152,8 +152,15 @@ def test_read_post_rejects_non_md(repo):
 
 
 def test_read_post_rejects_outside_bases(repo):
-    with pytest.raises(ValueError, match="Path must be under"):
+    with pytest.raises(ValueError, match="Path must be"):
         mcp_server.read_post("scripts/llm_client.md")
+
+
+def test_read_post_rejects_dotdot_traversal(repo):
+    # A .md file inside the repo but outside drafts/ or content/.
+    (repo / "secret.md").write_text("Title: Secret\n")
+    with pytest.raises(ValueError, match="Path must be"):
+        mcp_server.read_post("drafts/../secret.md")
 
 
 def test_write_draft_rejects_traversal_slug(repo):
