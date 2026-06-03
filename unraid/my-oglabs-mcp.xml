@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>oglabs-mcp</Name>
+  <!-- Local image tag built on the host: docker build -t oglabs-mcp:latest /mnt/user/appdata/oglabs -->
+  <Repository>oglabs-mcp:latest</Repository>
+  <Registry/>
+  <Network>bridge</Network>
+  <MyIP/>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support/>
+  <Project/>
+  <Overview>MCP server exposing oglabs blog operations (content management, LLM/image pipeline, build/deploy) over streamable-HTTP for remote agents on the LAN. The repo is mounted at /app and provides .env (LLM + AWS credentials). No authentication by design — LAN only.</Overview>
+  <Category>Other: Tools:</Category>
+  <WebUI/>
+  <TemplateURL/>
+  <Icon/>
+  <ExtraParams/>
+  <PostArgs/>
+  <CPUset/>
+  <DateInstalled/>
+  <DonateText/>
+  <DonateLink/>
+  <Description>MCP server for the oglabs static site (Pelican -&gt; S3/CloudFront).</Description>
+  <Config Name="MCP Port" Target="8765" Default="8765" Mode="tcp" Description="streamable-HTTP MCP endpoint (http://[IP]:8765/mcp)" Type="Port" Display="always" Required="true" Mask="false">8765</Config>
+  <Config Name="Repo path" Target="/app" Default="/mnt/user/appdata/oglabs" Mode="rw" Description="Path to the oglabs repo on the host. MUST contain .env with LLM + AWS credentials." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/oglabs</Config>
+  <Config Name="OGLABS_MCP_PORT" Target="OGLABS_MCP_PORT" Default="8765" Mode="" Description="Port the server listens on inside the container (keep in sync with the published port)." Type="Variable" Display="always" Required="false" Mask="false">8765</Config>
+</Container>

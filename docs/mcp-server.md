@@ -21,6 +21,35 @@ Docker runs on the Unraid host (`192.168.50.113`).
 
 The server listens on `0.0.0.0:8765`.
 
+## Run (Unraid native Docker UI)
+
+To manage the container from Unraid's **Docker** tab instead of compose:
+
+1. Copy the repo to the host (e.g. `/mnt/user/appdata/oglabs`) and ensure `.env`
+   is present with LLM + AWS credentials.
+2. Build the image on the host (the template references a local tag, it does not
+   pull from a registry):
+
+   ```bash
+   docker build -t oglabs-mcp:latest /mnt/user/appdata/oglabs
+   ```
+
+3. Install the template:
+
+   ```bash
+   cp unraid/my-oglabs-mcp.xml /boot/config/plugins/dockerMan/templates-user/
+   ```
+
+4. In the Unraid UI: **Docker → Add Container → Template: oglabs-mcp**. Adjust the
+   "Repo path" if the repo lives elsewhere, then **Apply**.
+
+Notes:
+- Credentials are not in the template — `make`/the scripts read them from the
+  `.env` inside the mounted repo.
+- Don't use "Force update / check for updates" on this container: the image is
+  local, so a pull would fail. Rebuild with `docker build` after code changes,
+  then restart the container.
+
 ## Connect a remote agent
 
 Point the agent's MCP client at:
