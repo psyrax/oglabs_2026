@@ -1,0 +1,15 @@
+services:
+  oglabs-mcp:
+    build: .
+    container_name: oglabs-mcp
+    ports:
+      - "8765:8765"
+    # Set OGLABS_REPO_PATH to the repo location on the Unraid host.
+    # Defaults to the compose file's directory.
+    volumes:
+      - "${OGLABS_REPO_PATH:-.}:/app"
+    env_file:
+      - .env
+    environment:
+      - OGLABS_MCP_PORT=8765
+    restart: unless-stopped
