@@ -132,9 +132,9 @@ def test_optimize_images_force(repo, mocker):
 
 def test_process_photos_builds_command(repo, mocker):
     run = mocker.patch("mcp_server._run", return_value={"ok": True})
-    mcp_server.process_photos(llm="ollama", force=True)
+    mcp_server.process_photos(force=True)
     run.assert_called_once_with(
-        ["python", "scripts/photo_pipeline.py", "--llm", "ollama", "--force"]
+        ["python", "scripts/photo_pipeline.py", "--force"]
     )
 
 
