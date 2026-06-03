@@ -125,5 +125,18 @@ def read_post(path: str) -> dict:
     return _parse_frontmatter(p.read_text())
 
 
+def _run(cmd: list[str]) -> dict:
+    """Run a command from the repo root, returning a structured result."""
+    proc = subprocess.run(
+        cmd, cwd=_repo_root(), capture_output=True, text=True
+    )
+    return {
+        "ok": proc.returncode == 0,
+        "returncode": proc.returncode,
+        "stdout": proc.stdout,
+        "stderr": proc.stderr,
+    }
+
+
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")

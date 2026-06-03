@@ -78,3 +78,23 @@ def test_read_post_parses_frontmatter(repo):
 def test_read_post_missing_raises(repo):
     with pytest.raises(ValueError, match="File not found"):
         mcp_server.read_post("drafts/blog/nope.md")
+
+
+def test_run_returns_structured_result(repo, mocker):
+    fake = mocker.Mock(returncode=0, stdout="done\n", stderr="")
+    run = mocker.patch("mcp_server.subprocess.run", return_value=fake)
+    result = mcp_server._run(["make", "build"])
+    assert result == {"ok": True, "returncode": 0, "stdout": "done\n", "stderr": ""}
+    run.assert_called_once_with(
+        ["make", "build"], cwd=mcp_server._repo_root(),
+        capture_output=True, text=True,
+    )
+
+
+def test_run_marks_failure(repo, mocker):
+    fake = mocker.Mock(returncode=2, stdout="", stderr="boom")
+    mocker.patch("mcp_server.subprocess.run", return_value=fake)
+    result = mcp_server._run(["make", "deploy"])
+    assert result["ok"] is False
+    assert result["returncode"] == 2
+    assert result["stderr"] == "boom"
