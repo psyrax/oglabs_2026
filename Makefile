@@ -2,7 +2,7 @@
 -include .env
 export
 
-.PHONY: photos images build deploy publish clean strip-fences
+.PHONY: photos images build deploy publish clean strip-fences mcp
 
 # Process new gallery photos (skips already-processed via manifest)
 photos:
@@ -45,3 +45,7 @@ draft:
 	DATE=$$(date +%Y-%m-%d); \
 	printf "Title: $(TITLE)\nDate: $$DATE\nCategory: $(SECTION)\nSlug: $$SLUG\n\n" > $$FILE; \
 	echo "Created $$FILE"
+
+# Run the MCP server in the foreground (local dev; Docker is used in prod)
+mcp:
+	python mcp_server.py
