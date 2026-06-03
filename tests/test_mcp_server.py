@@ -38,3 +38,43 @@ def test_validate_content_section_rejects():
 def test_slugify():
     assert mcp_server._slugify("Mi Primer Post!") == "mi-primer-post"
     assert mcp_server._slugify("  Hola --- Mundo  ") == "hola-mundo"
+
+
+def test_create_draft_writes_frontmatter(repo):
+    rel = mcp_server.create_draft("blog", "Mi Primer Post!")
+    assert rel == "drafts/blog/mi-primer-post.md"
+    text = (repo / rel).read_text()
+    assert "Title: Mi Primer Post!" in text
+    assert "Category: blog" in text
+    assert "Slug: mi-primer-post" in text
+
+
+def test_create_draft_rejects_bad_section(repo):
+    with pytest.raises(ValueError, match="Invalid section"):
+        mcp_server.create_draft("bogus", "x")
+
+
+def test_write_draft_overwrites(repo):
+    mcp_server.create_draft("blog", "Hola")
+    rel = mcp_server.write_draft("blog", "hola", "Title: Hola\n\nCuerpo nuevo")
+    assert (repo / rel).read_text() == "Title: Hola\n\nCuerpo nuevo"
+
+
+def test_list_drafts_and_posts(repo):
+    mcp_server.create_draft("blog", "Uno")
+    (repo / "content" / "blog").mkdir(parents=True)
+    (repo / "content" / "blog" / "pub.md").write_text("Title: Pub\n")
+    assert mcp_server.list_drafts("blog") == ["drafts/blog/uno.md"]
+    assert mcp_server.list_posts("blog") == ["content/blog/pub.md"]
+
+
+def test_read_post_parses_frontmatter(repo):
+    mcp_server.write_draft("blog", "p", "Title: P\nCategory: blog\n\nEl cuerpo.")
+    result = mcp_server.read_post("drafts/blog/p.md")
+    assert result["frontmatter"] == {"Title": "P", "Category": "blog"}
+    assert result["body"] == "El cuerpo."
+
+
+def test_read_post_missing_raises(repo):
+    with pytest.raises(ValueError, match="File not found"):
+        mcp_server.read_post("drafts/blog/nope.md")
