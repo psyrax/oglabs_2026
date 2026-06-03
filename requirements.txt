@@ -5,3 +5,4 @@ anthropic>=0.25
 openai>=1.30
 requests>=2.31
 python-dotenv>=1.0
+mcp>=1.2
