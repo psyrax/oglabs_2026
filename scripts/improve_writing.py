@@ -46,7 +46,7 @@ def improve_file(src: Path, section: str, client: LLMClient, no_overwrite: bool)
 def main() -> None:
     parser = argparse.ArgumentParser(description="Improve writing in drafts using an LLM")
     parser.add_argument("--section", required=True, choices=["blog", "projects", "all"])
-    parser.add_argument("--llm", default=None, choices=["ollama", "claude", "openai"])
+    parser.add_argument("--llm", default=None, choices=["ollama", "claude"])
     parser.add_argument("--no-overwrite", action="store_true",
                         help="Skip files that already exist in content/")
     args = parser.parse_args()

@@ -175,7 +175,7 @@ def improve_writing(
 ) -> dict:
     """Improve drafts in a section with an LLM (scripts/improve_writing.py).
 
-    section: 'blog', 'projects', or 'all'. llm: 'ollama'|'claude'|'openai'.
+    section: 'blog', 'projects', or 'all'. llm: 'ollama'|'claude'.
     """
     _validate_section(section, PIPELINE_SECTIONS)
     cmd = ["python", "scripts/improve_writing.py", "--section", section]
@@ -196,14 +196,9 @@ def optimize_images(force: bool = False) -> dict:
 
 
 @mcp.tool()
-def process_photos(llm: str | None = None, force: bool = False) -> dict:
-    """Process new gallery photos (scripts/photo_pipeline.py).
-
-    llm: 'ollama'|'claude'|'openai' for the description backend.
-    """
+def process_photos(force: bool = False) -> dict:
+    """Process new gallery photos with cloud Ollama models (scripts/photo_pipeline.py)."""
     cmd = ["python", "scripts/photo_pipeline.py"]
-    if llm:
-        cmd += ["--llm", llm]
     if force:
         cmd.append("--force")
     return _run(cmd)

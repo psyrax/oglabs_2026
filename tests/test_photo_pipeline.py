@@ -109,17 +109,22 @@ def test_write_article_creates_markdown(tmp_path):
     photo_path = tmp_path / "photos/originals/sunset.jpg"
     photo_path.write_bytes(b"x")
     web_path = tmp_path / "content/photos/images/sunset.jpg"
-    exif = {"date": "2024:06:15 18:30:00", "camera": "Sony A7", "iso": 200, "aperture": 2.8, "speed": "1/500s"}
-    write_article(photo_path, web_path, "Hermosa puesta de sol.", exif)
+    exif = {"date": "2024:06:15 18:30:00", "all_fields": {"Model": "Sony A7", "ISOSpeedRatings": 200}}
+    write_article(photo_path, web_path, "Hermosa puesta de sol.",
+                  "memoria qwen", "memoria gemma", "memoria kimi", exif)
     article = tmp_path / "content/photos/sunset.md"
     assert article.exists()
     text = article.read_text()
     assert "Title: sunset" in text
     assert "Date: 2024-06-15" in text
     assert "Category: photos" in text
-    assert "{static}/photos/images/sunset.jpg" in text
+    assert "Photo: photos/images/sunset.jpg" in text
     assert "Hermosa puesta de sol." in text
     assert "Sony A7" in text
+    # the three cloud-model memories and their labels
+    assert "*qwen3-vl:235b*" in text and "memoria qwen" in text
+    assert "*gemma4:31b*" in text and "memoria gemma" in text
+    assert "*kimi-k2.6*" in text and "memoria kimi" in text
 
 
 def test_write_article_uses_mtime_when_no_exif(tmp_path):
@@ -130,6 +135,6 @@ def test_write_article_uses_mtime_when_no_exif(tmp_path):
     known_ts = datetime(2024, 1, 15, 12, 0, 0).timestamp()
     os.utime(photo_path, (known_ts, known_ts))
     web_path = tmp_path / "content/photos/images/nocam.jpg"
-    write_article(photo_path, web_path, "Sin EXIF.", {})
+    write_article(photo_path, web_path, "Sin EXIF.", "m1", "m2", "m3", {})
     text = (tmp_path / "content/photos/nocam.md").read_text()
     assert "2024-01-15" in text

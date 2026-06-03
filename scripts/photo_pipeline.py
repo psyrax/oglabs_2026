@@ -2,18 +2,16 @@ import argparse
 import base64
 import json
 import os
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import piexif
 import requests
+from dotenv import load_dotenv
 from PIL import Image
 
-# Allow running from project root or scripts/
-sys.path.insert(0, str(Path(__file__).parent))
-from llm_client import get_client
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 MANIFEST_PATH = Path("photos/.processed_manifest.json")
 ORIGINALS_DIR = Path("photos/originals")
@@ -107,23 +105,14 @@ def optimize_photo(src: Path, dst: Path) -> None:
         img.save(dst, "JPEG", quality=92, optimize=True)
 
 
-OLLAMA_REMOTE = "http://192.168.50.113:11434"
+OLLAMA_REMOTE = os.getenv("OLLAMA_HOST", "http://192.168.50.113:11434")
 PROMPT_TEXT_PATH = Path("prompts/photo_memory.txt")
 
-
-def call_stored_prompt(prompt_id: str, image_path: str) -> str:
-    from openai import OpenAI
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-    with open(image_path, "rb") as f:
-        img_data = base64.b64encode(f.read()).decode()
-    response = client.responses.create(
-        prompt={"id": prompt_id},
-        input=[{
-            "role": "user",
-            "content": [{"type": "input_image", "image_url": f"data:image/jpeg;base64,{img_data}"}],
-        }],
-    )
-    return response.output_text
+# Cloud models served by the homelab Ollama (same /api/generate API as local
+# models). The "three fake memories" use three distinct cloud models.
+VISION_MODEL = "qwen3-vl:235b-cloud"       # photo description + one memory
+MEMORY_VISION_MODEL = "gemma4:31b-cloud"   # one memory (vision)
+MEMORY_TEXT_MODEL = "kimi-k2.6:cloud"      # one memory (text, from the description)
 
 
 def call_ollama_prompt(model: str, prompt_text: str, image_path: Optional[str] = None, think: bool = True) -> str:
@@ -139,8 +128,8 @@ def call_ollama_prompt(model: str, prompt_text: str, image_path: Optional[str] =
     return resp.json()["response"]
 
 
-def write_article(photo_path: Path, web_path: Path, description: str, extra: str,
-                  gemma: str, lfm: str, exif: dict) -> None:
+def write_article(photo_path: Path, web_path: Path, description: str,
+                  mem_qwen: str, mem_gemma: str, mem_kimi: str, exif: dict) -> None:
     ARTICLES_DIR.mkdir(parents=True, exist_ok=True)
     slug = photo_path.stem
     date_str = exif.get("date") or ""
@@ -157,7 +146,7 @@ def write_article(photo_path: Path, web_path: Path, description: str, extra: str
 
     meta_block = ("\n".join(meta_lines) + "\n\n") if meta_lines else ""
     disclaimer = (
-        "_Lo siguiente es una memoria falsa generada por tres modelos de lenguaje (gpt-4o, gemma4 y lfm2.5-thinking) "
+        "_Lo siguiente es una memoria falsa generada por tres modelos de lenguaje (qwen3-vl, gemma4:31b y kimi-k2.6) "
         "a partir de la imagen, usando [este prompt](https://github.com/psyrax/oglabs_2026/blob/master/prompts/photo_memory.txt). "
         "Ninguno de los recuerdos ocurrió._"
     )
@@ -170,38 +159,36 @@ def write_article(photo_path: Path, web_path: Path, description: str, extra: str
         f"{description}\n\n"
         f"{meta_block}"
         f"{disclaimer}\n\n"
-        f"*gpt-4o*\n\n{extra}\n\n"
-        f"*gemma4*\n\n{gemma}\n\n"
-        f"*lfm2.5-thinking*\n\n{lfm}\n"
+        f"*qwen3-vl:235b*\n\n{mem_qwen}\n\n"
+        f"*gemma4:31b*\n\n{mem_gemma}\n\n"
+        f"*kimi-k2.6*\n\n{mem_kimi}\n"
     )
     (ARTICLES_DIR / f"{slug}.md").write_text(content)
 
 
-STORED_PROMPT_ID = os.getenv("PROMPT_ID", "")
-
-
-def process_photo(path: Path, llm_backend: Optional[str]) -> None:
+def process_photo(path: Path) -> None:
     print(f"  Processing {path.name}...")
     exif = extract_exif(path)
     web_path = WEB_DIR / f"{path.stem}.jpg"
     optimize_photo(path, web_path)
-    client = get_client(llm_backend)
-    description = client.complete(DESCRIPTION_PROMPT, image_path=str(web_path))
-    print(f"    Calling stored prompt (OpenAI)...")
-    extra = call_stored_prompt(STORED_PROMPT_ID, str(web_path))
     prompt_text = PROMPT_TEXT_PATH.read_text()
-    print(f"    Calling gemma4:e4b (Ollama)...")
-    gemma = call_ollama_prompt("gemma4:e4b", prompt_text, str(web_path))
-    print(f"    Calling lfm2.5-thinking:latest (Ollama)...")
-    lfm_prompt = f"Descripción de la imagen:\n{description}\n\n---\n\n{prompt_text}"
-    lfm = call_ollama_prompt("lfm2.5-thinking:latest", lfm_prompt, image_path=None, think=False)
-    write_article(path, web_path, description, extra, gemma, lfm, exif)
+
+    print(f"    Describing with {VISION_MODEL} (Ollama)...")
+    description = call_ollama_prompt(VISION_MODEL, DESCRIPTION_PROMPT, str(web_path), think=False)
+    print(f"    Memory via {VISION_MODEL} (Ollama)...")
+    mem_qwen = call_ollama_prompt(VISION_MODEL, prompt_text, str(web_path), think=False)
+    print(f"    Memory via {MEMORY_VISION_MODEL} (Ollama)...")
+    mem_gemma = call_ollama_prompt(MEMORY_VISION_MODEL, prompt_text, str(web_path), think=False)
+    print(f"    Memory via {MEMORY_TEXT_MODEL} (Ollama)...")
+    kimi_prompt = f"Descripción de la imagen:\n{description}\n\n---\n\n{prompt_text}"
+    mem_kimi = call_ollama_prompt(MEMORY_TEXT_MODEL, kimi_prompt, image_path=None, think=False)
+
+    write_article(path, web_path, description, mem_qwen, mem_gemma, mem_kimi, exif)
     print(f"  → content/photos/{path.stem}.md")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Process new photos for oglabs")
-    parser.add_argument("--llm", default=None, choices=["ollama", "claude", "openai"])
     parser.add_argument("--force", action="store_true", help="Re-process already processed photos")
     args = parser.parse_args()
 
@@ -218,7 +205,7 @@ def main() -> None:
 
     print(f"Processing {len(photos)} photo(s)...")
     for photo in photos:
-        process_photo(photo, args.llm)
+        process_photo(photo)
         manifest.add(photo.name)
 
     save_manifest(manifest)
