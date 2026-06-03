@@ -136,3 +136,31 @@ def test_process_photos_builds_command(repo, mocker):
     run.assert_called_once_with(
         ["python", "scripts/photo_pipeline.py", "--llm", "ollama", "--force"]
     )
+
+
+# --- security hardening regression tests ---
+
+def test_read_post_rejects_dotenv(repo):
+    (repo / ".env").write_text("SECRET=shhh")
+    with pytest.raises(ValueError):
+        mcp_server.read_post(".env")
+
+
+def test_read_post_rejects_non_md(repo):
+    with pytest.raises(ValueError, match="Only .md files"):
+        mcp_server.read_post("content/blog/secret.txt")
+
+
+def test_read_post_rejects_outside_bases(repo):
+    with pytest.raises(ValueError, match="Path must be under"):
+        mcp_server.read_post("scripts/llm_client.md")
+
+
+def test_write_draft_rejects_traversal_slug(repo):
+    with pytest.raises(ValueError, match="Invalid slug"):
+        mcp_server.write_draft("blog", "../../content/blog/pwned", "x")
+
+
+def test_list_md_rejects_bad_section(repo):
+    with pytest.raises(ValueError, match="Invalid section"):
+        mcp_server.list_drafts("../")

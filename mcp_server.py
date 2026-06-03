@@ -13,6 +13,8 @@ from mcp.server.fastmcp import FastMCP
 
 CONTENT_SECTIONS = {"blog", "projects", "photos"}
 PIPELINE_SECTIONS = {"blog", "projects", "all"}
+# Top-level dirs that read_post is allowed to read from.
+CONTENT_BASES = {"drafts", "content"}
 
 mcp = FastMCP(
     "oglabs",
@@ -47,6 +49,15 @@ def _slugify(title: str) -> str:
     s = re.sub(r"[^a-z0-9]", "-", title.lower())
     s = re.sub(r"-+", "-", s).strip("-")
     return s
+
+
+def _safe_slug(slug: str) -> str:
+    """Reject slugs with path separators or other unsafe characters."""
+    if not re.fullmatch(r"[a-z0-9][a-z0-9-]*", slug):
+        raise ValueError(
+            f"Invalid slug {slug!r}. Use lowercase letters, digits, and hyphens."
+        )
+    return slug
 
 
 def _parse_frontmatter(text: str) -> dict:
@@ -86,6 +97,7 @@ def create_draft(section: str, title: str) -> str:
 def write_draft(section: str, slug: str, content: str) -> str:
     """Write (overwrite) the full content of drafts/<section>/<slug>.md."""
     _validate_section(section, CONTENT_SECTIONS)
+    slug = _safe_slug(slug)
     path = _repo_path("drafts", section, f"{slug}.md")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content)
@@ -93,6 +105,8 @@ def write_draft(section: str, slug: str, content: str) -> str:
 
 
 def _list_md(base: str, section: str | None) -> list[str]:
+    if section is not None:
+        _validate_section(section, CONTENT_SECTIONS)
     sections = [section] if section else sorted(CONTENT_SECTIONS)
     out: list[str] = []
     for s in sections:
@@ -118,9 +132,18 @@ def list_posts(section: str | None = None) -> list[str]:
 
 @mcp.tool()
 def read_post(path: str) -> dict:
-    """Read a .md file (relative to repo root); returns frontmatter + body."""
-    p = _repo_path(path)
-    if not p.exists():
+    """Read a content/draft .md file (relative to repo root).
+
+    Restricted to .md files under drafts/ or content/ so the tool cannot be
+    used to disclose other repo files (e.g. .env).
+    """
+    if not path.endswith(".md"):
+        raise ValueError("Only .md files are readable.")
+    parts = Path(path).parts
+    if not parts or parts[0] not in CONTENT_BASES:
+        raise ValueError("Path must be under drafts/ or content/.")
+    p = _repo_path(*parts)
+    if not p.exists() or not p.is_file():
         raise ValueError(f"File not found: {path}")
     return _parse_frontmatter(p.read_text())
 
