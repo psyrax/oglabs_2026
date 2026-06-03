@@ -26,5 +26,28 @@ def _repo_root() -> Path:
     return Path(os.getenv("OGLABS_REPO_ROOT", Path(__file__).resolve().parent))
 
 
+def _repo_path(*parts: str) -> Path:
+    """Resolve a path inside the repo, rejecting anything that escapes it."""
+    root = _repo_root().resolve()
+    p = (root / Path(*parts)).resolve()
+    if p != root and root not in p.parents:
+        raise ValueError(f"Path {p} escapes repo root {root}.")
+    return p
+
+
+def _validate_section(section: str, allowed: set) -> str:
+    if section not in allowed:
+        raise ValueError(
+            f"Invalid section {section!r}. Choose from {sorted(allowed)}."
+        )
+    return section
+
+
+def _slugify(title: str) -> str:
+    s = re.sub(r"[^a-z0-9]", "-", title.lower())
+    s = re.sub(r"-+", "-", s).strip("-")
+    return s
+
+
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")
