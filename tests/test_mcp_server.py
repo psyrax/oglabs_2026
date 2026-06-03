@@ -98,3 +98,41 @@ def test_run_marks_failure(repo, mocker):
     assert result["ok"] is False
     assert result["returncode"] == 2
     assert result["stderr"] == "boom"
+
+
+def test_improve_writing_builds_command(repo, mocker):
+    run = mocker.patch("mcp_server._run", return_value={"ok": True})
+    mcp_server.improve_writing("blog", llm="claude", overwrite=False)
+    run.assert_called_once_with(
+        ["python", "scripts/improve_writing.py", "--section", "blog",
+         "--llm", "claude", "--no-overwrite"]
+    )
+
+
+def test_improve_writing_defaults(repo, mocker):
+    run = mocker.patch("mcp_server._run", return_value={"ok": True})
+    mcp_server.improve_writing("all")
+    run.assert_called_once_with(
+        ["python", "scripts/improve_writing.py", "--section", "all"]
+    )
+
+
+def test_improve_writing_rejects_bad_section(repo):
+    with pytest.raises(ValueError, match="Invalid section"):
+        mcp_server.improve_writing("photos")
+
+
+def test_optimize_images_force(repo, mocker):
+    run = mocker.patch("mcp_server._run", return_value={"ok": True})
+    mcp_server.optimize_images(force=True)
+    run.assert_called_once_with(
+        ["python", "scripts/optimize_images.py", "--force"]
+    )
+
+
+def test_process_photos_builds_command(repo, mocker):
+    run = mocker.patch("mcp_server._run", return_value={"ok": True})
+    mcp_server.process_photos(llm="ollama", force=True)
+    run.assert_called_once_with(
+        ["python", "scripts/photo_pipeline.py", "--llm", "ollama", "--force"]
+    )

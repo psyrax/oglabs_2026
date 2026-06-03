@@ -138,5 +138,45 @@ def _run(cmd: list[str]) -> dict:
     }
 
 
+@mcp.tool()
+def improve_writing(
+    section: str, llm: str | None = None, overwrite: bool = True
+) -> dict:
+    """Improve drafts in a section with an LLM (scripts/improve_writing.py).
+
+    section: 'blog', 'projects', or 'all'. llm: 'ollama'|'claude'|'openai'.
+    """
+    _validate_section(section, PIPELINE_SECTIONS)
+    cmd = ["python", "scripts/improve_writing.py", "--section", section]
+    if llm:
+        cmd += ["--llm", llm]
+    if not overwrite:
+        cmd.append("--no-overwrite")
+    return _run(cmd)
+
+
+@mcp.tool()
+def optimize_images(force: bool = False) -> dict:
+    """Optimize new post images for web (scripts/optimize_images.py)."""
+    cmd = ["python", "scripts/optimize_images.py"]
+    if force:
+        cmd.append("--force")
+    return _run(cmd)
+
+
+@mcp.tool()
+def process_photos(llm: str | None = None, force: bool = False) -> dict:
+    """Process new gallery photos (scripts/photo_pipeline.py).
+
+    llm: 'ollama'|'claude'|'openai' for the description backend.
+    """
+    cmd = ["python", "scripts/photo_pipeline.py"]
+    if llm:
+        cmd += ["--llm", llm]
+    if force:
+        cmd.append("--force")
+    return _run(cmd)
+
+
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")
