@@ -2,7 +2,13 @@
 -include .env
 export
 
-.PHONY: photos images build deploy publish clean strip-fences mcp
+# Unraid host running the MCP container (override on the CLI if needed)
+MCP_HOST ?= root@192.168.50.113
+MCP_REPO_PATH ?= /mnt/user/appdata/oglabs
+MCP_IMAGE ?= oglabs-mcp:latest
+MCP_CONTAINER ?= oglabs-mcp
+
+.PHONY: photos images build deploy publish clean strip-fences mcp sync-host
 
 # Process new gallery photos (skips already-processed via manifest)
 photos:
@@ -49,3 +55,32 @@ draft:
 # Run the MCP server in the foreground (local dev; Docker is used in prod)
 mcp:
 	python mcp_server.py
+
+# Sync this repo to the Unraid host, rebuild the image, and restart the container.
+# Override host/path with: make sync-host MCP_HOST=root@host MCP_REPO_PATH=/path
+sync-host:
+	rsync -az --delete \
+		--exclude='.git/' \
+		--exclude='output/' \
+		--exclude='photos/originals/' \
+		--exclude='.playwright-mcp/' \
+		--exclude='__pycache__/' \
+		--exclude='.pytest_cache/' \
+		--exclude='*.pyc' \
+		--exclude='diag-*.png' \
+		--exclude='slide-*.png' \
+		--exclude='slides-*.png' \
+		./ $(MCP_HOST):$(MCP_REPO_PATH)/
+	ssh $(MCP_HOST) 'cd $(MCP_REPO_PATH) && \
+		docker build -t $(MCP_IMAGE) . && \
+		docker rm -f $(MCP_CONTAINER) 2>/dev/null; \
+		docker run -d \
+			--name $(MCP_CONTAINER) \
+			--network bridge \
+			-p 8765:8765 \
+			-v $(MCP_REPO_PATH):/app \
+			--env-file $(MCP_REPO_PATH)/.env \
+			-e OGLABS_MCP_PORT=8765 \
+			--restart unless-stopped \
+			$(MCP_IMAGE) && \
+		docker ps --filter name=$(MCP_CONTAINER) --format "{{.Names}}  {{.Status}}  {{.Ports}}"'
