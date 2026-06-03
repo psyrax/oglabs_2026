@@ -61,6 +61,7 @@ mcp:
 sync-host:
 	rsync -az --delete \
 		--exclude='.git/' \
+		--exclude='.env' \
 		--exclude='output/' \
 		--exclude='photos/originals/' \
 		--exclude='.playwright-mcp/' \
