@@ -164,3 +164,12 @@ def test_write_draft_rejects_traversal_slug(repo):
 def test_list_md_rejects_bad_section(repo):
     with pytest.raises(ValueError, match="Invalid section"):
         mcp_server.list_drafts("../")
+
+
+@pytest.mark.parametrize("tool,target", [
+    ("build", "build"), ("deploy", "deploy"), ("publish", "publish"),
+])
+def test_build_deploy_tools(repo, mocker, tool, target):
+    run = mocker.patch("mcp_server._run", return_value={"ok": True})
+    getattr(mcp_server, tool)()
+    run.assert_called_once_with(["make", target])

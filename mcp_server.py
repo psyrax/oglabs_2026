@@ -201,5 +201,23 @@ def process_photos(llm: str | None = None, force: bool = False) -> dict:
     return _run(cmd)
 
 
+@mcp.tool()
+def build() -> dict:
+    """Build the site (photos + images + strip-fences + pelican): make build."""
+    return _run(["make", "build"])
+
+
+@mcp.tool()
+def deploy() -> dict:
+    """Deploy output/ to S3 and invalidate CloudFront: make deploy."""
+    return _run(["make", "deploy"])
+
+
+@mcp.tool()
+def publish() -> dict:
+    """Build then deploy in one step: make publish."""
+    return _run(["make", "publish"])
+
+
 if __name__ == "__main__":
     mcp.run(transport="streamable-http")
