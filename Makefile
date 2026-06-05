@@ -29,6 +29,7 @@ build: photos images strip-fences
 # Deploy to S3 and optionally invalidate CloudFront cache
 deploy:
 	@test -n "$(S3_BUCKET)" || (echo "ERROR: S3_BUCKET is not set"; exit 1)
+	python scripts/scrub_output.py
 	aws s3 sync output/ s3://$(S3_BUCKET)/ --delete
 	@if [ -n "$(CLOUDFRONT_DISTRIBUTION_ID)" ]; then \
 		echo "Invalidating CloudFront cache..."; \

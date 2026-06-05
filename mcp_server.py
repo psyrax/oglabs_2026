@@ -131,6 +131,24 @@ def list_posts(section: str | None = None) -> list[str]:
 
 
 @mcp.tool()
+def publish_draft(section: str, slug: str) -> str:
+    """Promote a draft to the published tree so the build picks it up.
+
+    Copies drafts/<section>/<slug>.md to content/<section>/ verbatim (no LLM).
+    The site is built from content/, so a draft must be published before build.
+    """
+    _validate_section(section, CONTENT_SECTIONS)
+    slug = _safe_slug(slug)
+    src = _repo_path("drafts", section, f"{slug}.md")
+    if not src.is_file():
+        raise ValueError(f"Draft not found: drafts/{section}/{slug}.md")
+    dst = _repo_path("content", section, f"{slug}.md")
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_text(src.read_text())
+    return str(dst.relative_to(_repo_root()))
+
+
+@mcp.tool()
 def read_post(path: str) -> dict:
     """Read a content/draft .md file (relative to repo root).
 

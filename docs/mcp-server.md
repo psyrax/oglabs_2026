@@ -60,9 +60,16 @@ Transport: streamable-HTTP. No authentication (LAN only).
 
 ## Tools
 
-- Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`
+- Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`, `publish_draft`
 - Pipeline: `improve_writing`, `optimize_images`, `process_photos`
 - Build/deploy: `build`, `deploy`, `publish`
+
+The site builds only from `content/`. Drafts written via `create_draft`/`write_draft`
+land in `drafts/`; promote one with `publish_draft(section, slug)` (verbatim copy to
+`content/`) before `build`. `deploy` runs `scripts/scrub_output.py` first, which
+redacts high-confidence secrets and credential-style `NAME=value` assignments from
+`output/` before the S3 sync (IP/path and email scrubbing are available but off by
+default — toggles at the top of the script).
 
 `read_post` is restricted to `.md` files under `drafts/` or `content/`.
 `deploy`/`publish` push to production S3 and invalidate CloudFront — any agent
