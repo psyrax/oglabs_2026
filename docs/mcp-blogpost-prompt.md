@@ -48,6 +48,8 @@ saltarte este.)
 - **Antes de `deploy()` o `publish()` (suben a producción real en S3 +
   CloudFront), muestra el post al usuario y pide confirmación explícita.**
   (El deploy pasa un scrubber que redacta secretos del output antes de subir.)
+- Atajo de un solo paso (tras confirmar): `publish_draft_live(section="blog",
+  slug="<slug>")` promueve el draft y hace build + deploy de una.
 
 Empieza listando posts existentes para captar el estilo, propón el título, escribe
 el draft, y para antes de publicar.

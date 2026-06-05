@@ -62,7 +62,11 @@ Transport: streamable-HTTP. No authentication (LAN only).
 
 - Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`, `publish_draft`
 - Pipeline: `improve_writing`, `optimize_images`, `process_photos`
-- Build/deploy: `build`, `deploy`, `publish`
+- Build/deploy: `build`, `deploy`, `publish`, `publish_draft_live`
+
+`publish_draft_live(section, slug)` is the one-shot path: it promotes the draft to
+`content/` and runs `make publish` (build + scrub + S3 + CloudFront) — i.e. draft to
+production in a single call.
 
 The site builds only from `content/`. Drafts written via `create_draft`/`write_draft`
 land in `drafts/`; promote one with `publish_draft(section, slug)` (verbatim copy to
