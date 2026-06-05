@@ -173,6 +173,25 @@ def test_list_md_rejects_bad_section(repo):
         mcp_server.list_drafts("../")
 
 
+def test_publish_draft_copies_to_content(repo):
+    mcp_server.write_draft("blog", "mi-post", "Title: Mi Post\n\nCuerpo.")
+    rel = mcp_server.publish_draft("blog", "mi-post")
+    assert rel == "content/blog/mi-post.md"
+    assert (repo / "content/blog/mi-post.md").read_text() == "Title: Mi Post\n\nCuerpo."
+    # original draft is left in place
+    assert (repo / "drafts/blog/mi-post.md").exists()
+
+
+def test_publish_draft_missing_raises(repo):
+    with pytest.raises(ValueError, match="Draft not found"):
+        mcp_server.publish_draft("blog", "no-existe")
+
+
+def test_publish_draft_rejects_bad_slug(repo):
+    with pytest.raises(ValueError, match="Invalid slug"):
+        mcp_server.publish_draft("blog", "../../etc/passwd")
+
+
 @pytest.mark.parametrize("tool,target", [
     ("build", "build"), ("deploy", "deploy"), ("publish", "publish"),
 ])

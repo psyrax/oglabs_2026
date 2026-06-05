@@ -17,7 +17,7 @@ claude mcp add --transport http oglabs http://192.168.50.113:8765/mcp
 ```
 
 Verifica con `/mcp` que aparece "oglabs". Tools disponibles:
-- Contenido: `create_draft`, `write_draft`, `list_drafts`, `list_posts`, `read_post`
+- Contenido: `create_draft`, `write_draft`, `publish_draft`, `list_drafts`, `list_posts`, `read_post`
 - Pipeline: `improve_writing`, `optimize_images`, `process_photos`
 - Build/deploy: `build`, `deploy`, `publish`
 
@@ -37,10 +37,17 @@ Verifica con `/mcp` que aparece "oglabs". Tools disponibles:
 - (Opcional) Si quieres pulido automático con el LLM del homelab, usa
   `improve_writing(section="blog")` — reescribe los drafts hacia `content/`.
 
-### 4. Previsualiza y publica (pide confirmación antes de publicar)
+### 4. Publica el draft al árbol de contenido
+El sitio se construye **solo desde `content/`**, así que un draft no se publica
+hasta promoverlo: `publish_draft(section="blog", slug="<slug>")` lo copia tal cual
+a `content/blog/`. (Si usaste `improve_writing`, ese paso ya lo movió y puedes
+saltarte este.)
+
+### 5. Previsualiza y publica (pide confirmación antes de publicar)
 - Genera el sitio: `build()` y revisa que no haya errores.
 - **Antes de `deploy()` o `publish()` (suben a producción real en S3 +
   CloudFront), muestra el post al usuario y pide confirmación explícita.**
+  (El deploy pasa un scrubber que redacta secretos del output antes de subir.)
 
 Empieza listando posts existentes para captar el estilo, propón el título, escribe
 el draft, y para antes de publicar.
