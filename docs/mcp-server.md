@@ -60,7 +60,7 @@ Transport: streamable-HTTP. No authentication (LAN only).
 
 ## Tools
 
-- Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`, `publish_draft`
+- Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`, `publish_draft`, `delete_draft`
 - Pipeline: `improve_writing`, `optimize_images`, `process_photos`
 - Build/deploy: `build`, `deploy`, `publish`, `publish_draft_live`
 

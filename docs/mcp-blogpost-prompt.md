@@ -17,7 +17,7 @@ claude mcp add --transport http oglabs http://192.168.50.113:8765/mcp
 ```
 
 Verifica con `/mcp` que aparece "oglabs". Tools disponibles:
-- Contenido: `create_draft`, `write_draft`, `publish_draft`, `list_drafts`, `list_posts`, `read_post`
+- Contenido: `create_draft`, `write_draft`, `publish_draft`, `delete_draft`, `list_drafts`, `list_posts`, `read_post`
 - Pipeline: `improve_writing`, `optimize_images`, `process_photos`
 - Build/deploy: `build`, `deploy`, `publish`
 

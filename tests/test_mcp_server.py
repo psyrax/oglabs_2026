@@ -187,6 +187,32 @@ def test_publish_draft_missing_raises(repo):
         mcp_server.publish_draft("blog", "no-existe")
 
 
+def test_delete_draft_removes_file(repo):
+    mcp_server.write_draft("blog", "tmp", "Title: Tmp\n\nx")
+    assert (repo / "drafts/blog/tmp.md").exists()
+    msg = mcp_server.delete_draft("blog", "tmp")
+    assert not (repo / "drafts/blog/tmp.md").exists()
+    assert "deleted" in msg
+
+
+def test_delete_draft_leaves_published_content(repo):
+    mcp_server.write_draft("blog", "tmp", "x")
+    mcp_server.publish_draft("blog", "tmp")
+    mcp_server.delete_draft("blog", "tmp")
+    # deleting the draft must not remove the published copy
+    assert (repo / "content/blog/tmp.md").exists()
+
+
+def test_delete_draft_missing_raises(repo):
+    with pytest.raises(ValueError, match="Draft not found"):
+        mcp_server.delete_draft("blog", "no-existe")
+
+
+def test_delete_draft_rejects_bad_slug(repo):
+    with pytest.raises(ValueError, match="Invalid slug"):
+        mcp_server.delete_draft("blog", "../../etc/passwd")
+
+
 def test_publish_draft_rejects_bad_slug(repo):
     with pytest.raises(ValueError, match="Invalid slug"):
         mcp_server.publish_draft("blog", "../../etc/passwd")
