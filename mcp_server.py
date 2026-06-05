@@ -149,6 +149,21 @@ def publish_draft(section: str, slug: str) -> str:
 
 
 @mcp.tool()
+def delete_draft(section: str, slug: str) -> str:
+    """Delete drafts/<section>/<slug>.md.
+
+    Only removes the draft; a published copy under content/ is left untouched.
+    """
+    _validate_section(section, CONTENT_SECTIONS)
+    slug = _safe_slug(slug)
+    path = _repo_path("drafts", section, f"{slug}.md")
+    if not path.is_file():
+        raise ValueError(f"Draft not found: drafts/{section}/{slug}.md")
+    path.unlink()
+    return f"deleted drafts/{section}/{slug}.md"
+
+
+@mcp.tool()
 def publish_draft_live(section: str, slug: str) -> dict:
     """Promote a draft and push the site live in one step (production).
 
