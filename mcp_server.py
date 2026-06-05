@@ -149,6 +149,18 @@ def publish_draft(section: str, slug: str) -> str:
 
 
 @mcp.tool()
+def publish_draft_live(section: str, slug: str) -> dict:
+    """Promote a draft and push the site live in one step (production).
+
+    Promotes drafts/<section>/<slug>.md to content/, then runs `make publish`
+    (build + scrub + S3 sync + CloudFront invalidation). Returns the promoted
+    path and the structured publish result.
+    """
+    published = publish_draft(section, slug)
+    return {"published": published, "result": _run(["make", "publish"])}
+
+
+@mcp.tool()
 def read_post(path: str) -> dict:
     """Read a content/draft .md file (relative to repo root).
 

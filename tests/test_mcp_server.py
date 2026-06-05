@@ -192,6 +192,21 @@ def test_publish_draft_rejects_bad_slug(repo):
         mcp_server.publish_draft("blog", "../../etc/passwd")
 
 
+def test_publish_draft_live_promotes_and_publishes(repo, mocker):
+    mcp_server.write_draft("blog", "p", "Title: P\n\nCuerpo.")
+    run = mocker.patch("mcp_server._run", return_value={"ok": True, "returncode": 0})
+    result = mcp_server.publish_draft_live("blog", "p")
+    assert (repo / "content/blog/p.md").exists()
+    run.assert_called_once_with(["make", "publish"])
+    assert result["published"] == "content/blog/p.md"
+    assert result["result"] == {"ok": True, "returncode": 0}
+
+
+def test_publish_draft_live_missing_raises(repo):
+    with pytest.raises(ValueError, match="Draft not found"):
+        mcp_server.publish_draft_live("blog", "no-existe")
+
+
 @pytest.mark.parametrize("tool,target", [
     ("build", "build"), ("deploy", "deploy"), ("publish", "publish"),
 ])
