@@ -60,13 +60,24 @@ Transport: streamable-HTTP. No authentication (LAN only).
 
 ## Tools
 
-- Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`, `publish_draft`, `delete_draft`
+- Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`, `publish_draft`, `delete_draft`, `delete_post`
 - Pipeline: `improve_writing`, `optimize_images`, `process_photos`
-- Build/deploy: `build`, `deploy`, `publish`, `publish_draft_live`
+- Build/deploy: `build`, `deploy`, `publish`, `publish_draft_live`, `delete_post_live`
+- Discovery: `guide` (full workflow as text)
+
+For agent onboarding the server also ships an MCP-native **`instructions`** string
+(shown to every client on connect) and a **`publish_blog_post(tema)`** prompt that
+returns the guided publish workflow. A cold agent can call `guide()` or pull that
+prompt instead of relying on out-of-band docs.
 
 `publish_draft_live(section, slug)` is the one-shot path: it promotes the draft to
 `content/` and runs `make publish` (build + scrub + S3 + CloudFront) — i.e. draft to
 production in a single call.
+
+`delete_post(section, slug)` removes a published post from `content/` (next build
+drops it); `delete_post_live(section, slug)` deletes it and runs `make publish` so
+it disappears from production (S3 sync `--delete` + CloudFront) in one call. Both
+leave any draft under `drafts/` untouched. `delete_draft` only removes the draft.
 
 The site builds only from `content/`. Drafts written via `create_draft`/`write_draft`
 land in `drafts/`; promote one with `publish_draft(section, slug)` (verbatim copy to
