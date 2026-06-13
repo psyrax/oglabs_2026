@@ -36,6 +36,11 @@ TAGS_SAVE_AS = ''
 AUTHOR_SAVE_AS = ''
 AUTHORS_SAVE_AS = ''
 
+# Plugins: auto-tag `projects` posts about the Mundial so they land in the
+# /projects/mundial/ subsection by title (no manual tag needed).
+PLUGIN_PATHS = ['plugins']
+PLUGINS = ['autotag_mundial']
+
 # Delete stale files from output on each build
 DELETE_OUTPUT_DIRECTORY = True
 
