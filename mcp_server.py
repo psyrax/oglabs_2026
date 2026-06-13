@@ -3,6 +3,8 @@
 Exposes content management, the LLM/image pipeline, and build/deploy over
 streamable-HTTP so remote agents on the LAN can drive the blog.
 """
+import base64
+import binascii
 import os
 import re
 import subprocess
@@ -15,6 +17,9 @@ CONTENT_SECTIONS = {"blog", "projects", "photos"}
 PIPELINE_SECTIONS = {"blog", "projects", "all"}
 # Top-level dirs that read_post is allowed to read from.
 CONTENT_BASES = {"drafts", "content"}
+
+ALLOWED_IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
+MAX_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MB
 
 # Full workflow reference. Surfaced verbatim by the guide() tool and the
 # publish_blog_post prompt; SERVER_INSTRUCTIONS below is the short version that
@@ -111,6 +116,17 @@ def _safe_slug(slug: str) -> str:
             f"Invalid slug {slug!r}. Use lowercase letters, digits, and hyphens."
         )
     return slug
+
+
+def _safe_image_filename(name: str) -> str:
+    """Reject path separators / traversal and non-image extensions."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name) or ".." in name:
+        raise ValueError(f"Invalid filename {name!r}.")
+    if Path(name).suffix.lower() not in ALLOWED_IMAGE_EXT:
+        raise ValueError(
+            f"Unsupported image extension. Use one of {sorted(ALLOWED_IMAGE_EXT)}."
+        )
+    return name
 
 
 def _parse_frontmatter(text: str) -> dict:
@@ -298,6 +314,34 @@ def read_post(path: str) -> dict:
     if not p.is_file():
         raise ValueError(f"File not found: {path}")
     return _parse_frontmatter(p.read_text())
+
+
+@mcp.tool()
+def upload_image(
+    data_base64: str, filename: str, alt: str = "", optimize: bool = True
+) -> dict:
+    """Save a base64-encoded image into content/images/ for use in posts.
+
+    Writes content/images/<filename>, runs the image optimizer, and returns a
+    ready-to-paste markdown snippet. Reference it in a post as the returned
+    `markdown`. Use a descriptive filename (e.g. "umap-clusters.png").
+    """
+    name = _safe_image_filename(filename)
+    try:
+        raw = base64.b64decode(data_base64, validate=True)
+    except (binascii.Error, ValueError):
+        raise ValueError("data_base64 is not valid base64.")
+    if len(raw) > MAX_IMAGE_BYTES:
+        raise ValueError(f"Image exceeds {MAX_IMAGE_BYTES} bytes.")
+    path = _repo_path("content", "images", name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(raw)
+    result = _run(["python", "scripts/optimize_images.py"]) if optimize else None
+    return {
+        "path": f"content/images/{name}",
+        "markdown": f"![{alt}](/images/{name})",
+        "optimize": result,
+    }
 
 
 def _run(cmd: list[str]) -> dict:
