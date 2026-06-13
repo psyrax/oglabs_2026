@@ -18,7 +18,10 @@ PIPELINE_SECTIONS = {"blog", "projects", "all"}
 # Top-level dirs that read_post is allowed to read from.
 CONTENT_BASES = {"drafts", "content"}
 
-ALLOWED_IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg"}
+# Raster image types only. SVG is intentionally excluded: it can carry inline
+# <script>/event handlers and is served inline from /images/, so an uploaded SVG
+# would be a stored-XSS vector on the public site (and the optimizer is raster-only).
+ALLOWED_IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 MAX_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MB
 
 # Full workflow reference. Surfaced verbatim by the guide() tool and the

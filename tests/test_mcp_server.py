@@ -322,6 +322,13 @@ def test_upload_image_rejects_bad_extension(repo):
         mcp_server.upload_image(data, "evil.exe")
 
 
+def test_upload_image_rejects_svg(repo):
+    # SVG can carry inline <script>; it is served inline → stored-XSS vector.
+    data = base64.b64encode(b"<svg onload=alert(1)></svg>").decode()
+    with pytest.raises(ValueError, match="extension"):
+        mcp_server.upload_image(data, "x.svg")
+
+
 def test_upload_image_rejects_bad_base64(repo):
     with pytest.raises(ValueError, match="base64"):
         mcp_server.upload_image("not base64!!!", "x.png")
