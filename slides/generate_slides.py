@@ -9,7 +9,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-OUT = Path(__file__).parent / "slides"
+OUT = Path(__file__).parent / "marp"
 OUT.mkdir(exist_ok=True)
 
 MARP_HEADER = """---

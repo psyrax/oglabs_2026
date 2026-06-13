@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Sistemas Multi-Agente en tu Homelab — Psyrax</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,200..700;1,9..144,200..700&family=Source+Serif+4:ital,opsz,wght@0,8..60,300..600;1,8..60,300..600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.css">
+
+  <style>
+    html, body, .reveal-viewport { background: #0a0a0a !important; }
+
+    :root {
+      --bg:       #0a0a0a;
+      --bg-s:     #131313;
+      --text:     #e0dcd4;
+      --dim:      #888880;
+      --heading:  #f2efe8;
+      --border:   #282826;
+      --accent:   #c8a96a;
+      --f-disp:   'Fraunces', Georgia, serif;
+      --f-body:   'Source Serif 4', Georgia, serif;
+      --f-mono:   'JetBrains Mono', monospace;
+    }
+
+    /* ── Reveal base ───────────────────────────────────────── */
+    .reveal-viewport { background: var(--bg); }
+
+    .reveal {
+      font-family: var(--f-body);
+      color: var(--text);
+      font-optical-sizing: auto;
+    }
+
+    .reveal .slides section {
+      text-align: left;
+      padding: 1.4rem 2.2rem;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    /* ── Typography ────────────────────────────────────────── */
+    .reveal h1, .reveal h2 {
+      font-family: var(--f-disp);
+      font-optical-sizing: auto;
+      color: var(--heading);
+      text-transform: none;
+      text-shadow: none;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      margin: 0 0 0.5em;
+    }
+    .reveal h1 { font-size: 3em; font-weight: 300; font-style: italic; }
+    .reveal h2 { font-size: 1.9em; font-weight: 400; }
+
+    .reveal p  { font-size: 1.3em; line-height: 1.7; margin: 0 0 0.5em; }
+    .reveal li { font-size: 1.3em; line-height: 1.75; margin-bottom: 0.5em; }
+
+    .reveal ul  { list-style: none; padding: 0; }
+    .reveal ul li::before { content: "—"; margin-right: 0.55em; color: var(--dim); }
+
+    .reveal strong { color: var(--accent); font-weight: 600; }
+    .reveal em     { font-style: italic; color: var(--text); }
+
+    .reveal code {
+      font-family: var(--f-mono);
+      background: var(--bg-s);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.1em 0.35em;
+      font-size: 0.88em;
+      color: #8ecfba;
+    }
+
+    .reveal hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.1rem 0;
+    }
+
+    /* ── Label (eyebrow text) ──────────────────────────────── */
+    .label {
+      font-family: var(--f-mono);
+      font-size: 0.48em;
+      color: var(--dim);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    /* ── Progress & slide number ───────────────────────────── */
+    .reveal .progress { height: 2px; color: var(--accent); }
+    .reveal .controls { color: var(--accent); }
+    .reveal .slide-number {
+      font-family: var(--f-mono);
+      font-size: 0.42em;
+      color: var(--dim);
+      background: transparent;
+      bottom: 14px; right: 18px;
+    }
+
+    /* ── Chip tags ─────────────────────────────────────────── */
+    .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.9rem; }
+    .chip {
+      font-family: var(--f-mono);
+      font-size: 0.4em;
+      background: var(--bg-s);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 0.25em 0.65em;
+      color: var(--accent);
+      letter-spacing: 0.05em;
+    }
+
+    /* ── Two-column grid ───────────────────────────────────── */
+    .cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2.5rem;
+      margin-top: 0.6rem;
+    }
+    .col-label {
+      font-family: var(--f-mono);
+      font-size: 0.6em;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.5em;
+      display: block;
+    }
+
+    /* ── Diagram container ─────────────────────────────────── */
+    .reveal .slides section { height: 100%; }
+
+    .slide-diagram {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .diagram-wrap {
+      flex: 1;
+      min-height: 0;
+      background: #060606;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1rem;
+      margin-top: 0.5rem;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .diagram-wrap .mermaid {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
+    .diagram-wrap .mermaid svg { display: block; }
+
+    /* ── SLIDE 0 — Title ───────────────────────────────────── */
+    .s-title {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      gap: 0;
+    }
+    .s-title .eyebrow {
+      font-family: var(--f-mono);
+      font-size: 0.48em;
+      color: var(--dim);
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 1.4rem;
+    }
+    .s-title h1 { font-size: 3em; margin-bottom: 0.3em; }
+    .s-title .sub {
+      font-family: var(--f-body);
+      font-size: 0.78em;
+      color: var(--dim);
+      font-optical-sizing: auto;
+      margin-top: 0.5rem;
+    }
+    .s-title .site {
+      font-family: var(--f-mono);
+      font-size: 0.42em;
+      color: #2a2a28;
+      margin-top: 2.5rem;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── SLIDE 1 — Who am I ────────────────────────────────── */
+    .s-who {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+    }
+    .s-who .handle {
+      font-family: var(--f-disp);
+      font-size: 5em;
+      font-weight: 200;
+      font-style: italic;
+      font-optical-sizing: auto;
+      color: var(--heading);
+      line-height: 1;
+      margin-bottom: 0.08em;
+    }
+    .s-who .fullname {
+      font-family: var(--f-mono);
+      font-size: 0.6em;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+      margin-bottom: 1em;
+    }
+    .s-who .roles {
+      font-family: var(--f-body);
+      font-size: 1.1em;
+      font-optical-sizing: auto;
+      color: var(--text);
+      line-height: 1.9;
+      margin-bottom: 1em;
+    }
+    .s-who .roles span { color: var(--accent); font-weight: 500; }
+    .s-who .gh {
+      font-family: var(--f-mono);
+      font-size: 0.6em;
+      color: var(--dim);
+      letter-spacing: 0.06em;
+    }
+    .s-who .tcg-note {
+      font-family: var(--f-body);
+      font-optical-sizing: auto;
+      font-size: 0.72em;
+      color: var(--dim);
+      font-style: italic;
+      margin-top: 1.2em;
+      padding-top: 1em;
+      border-top: 1px solid var(--border);
+      line-height: 1.7;
+      max-width: 85%;
+    }
+
+    /* ── SLIDE 11 — Final ──────────────────────────────────── */
+    .s-final {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+    }
+    .s-final h1 { font-size: 2em; line-height: 1.3; }
+    .s-final .links {
+      font-family: var(--f-mono);
+      font-size: 0.65em;
+      color: var(--dim);
+      margin-top: 2rem;
+      line-height: 2.2;
+    }
+    .s-final .links strong { color: var(--text); display: block; }
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+  <!-- ════════════════════════════════════════════
+       0 · TITLE
+  ════════════════════════════════════════════ -->
+  <section>
+    <div class="s-title">
+      <div class="eyebrow">oglabs · 2026</div>
+      <h1>Sistemas Multi-Agente<br>en tu Homelab</h1>
+      <div class="sub">
+        LLMs locales · agentes reales · cero facturas de API
+      </div>
+      <div class="site">oglabs.info/blog/serie-multiagente-homelab/</div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       1 · WHO AM I
+  ════════════════════════════════════════════ -->
+  <section>
+    <div class="s-who">
+      <div class="handle">Psyrax</div>
+      <div class="fullname">José Luis Espinoza Cuevas</div>
+      <div class="roles">
+        <span>Data Scientist</span> · <span>Product Owner</span><br>
+        <span>Gamer</span> · <span>Melómano</span> · <span>Maker</span>
+      </div>
+      <div class="gh">github.com/psyrax</div>
+      <div class="tcg-note">
+        Esta presentación existe porque volví a la adicción de Pokémon TCG.<br>
+        Necesitaba un bot que me avisara de torneos en CDMX.<br>
+        Lo que empezó como un script de 50 líneas terminó siendo un sistema multi-agente.
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       2 · EL PROBLEMA
+  ════════════════════════════════════════════ -->
+  <section>
+    <div>
+      <span class="label">Motivación · Post 1</span>
+      <h2>¿Por qué no solo usar la API de OpenAI?</h2>
+      <ul>
+        <li>Una sesión de debugging de 4h puede costarte <code>$10–30</code> sin producir nada útil</li>
+        <li>Los rate limits interrumpen el flujo justo cuando más necesitas iterar</li>
+        <li>Datos privados → enviarlos a un tercero puede ser un bloqueador legal</li>
+        <li>La API cae → tu demo cae</li>
+      </ul>
+      <hr>
+      <p style="color: var(--dim); font-style: italic;">
+        Con hardware local, cada llamada cuesta exactamente <strong>cero dólares</strong>.<br>
+        El costo eléctrico mensual es menor que una sola sesión de debugging en GPT-4.
+      </p>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       3 · EL STACK
+  ════════════════════════════════════════════ -->
+  <section>
+    <div>
+      <span class="label">Hardware</span>
+      <h2>Dos máquinas, roles separados</h2>
+      <div class="cols">
+        <div>
+          <span class="col-label">Orquestador</span>
+          <ul>
+            <li>Raspberry Pi 5</li>
+            <li>OpenClaw gateway</li>
+            <li>Cron jobs · scripts Python</li>
+            <li>Chromium CDP</li>
+            <li>~5W idle</li>
+          </ul>
+        </div>
+        <div>
+          <span class="col-label">Motor de inferencia</span>
+          <ul>
+            <li>Ryzen 5 · 32 GB RAM</li>
+            <li>AMD RX 9070 XT · 16 GB VRAM</li>
+            <li>Ollama + 4 modelos</li>
+            <li>Postgres 18 (Docker)</li>
+            <li>Unraid OS</li>
+          </ul>
+        </div>
+      </div>
+      <p style="color: var(--dim); font-style: italic; margin-top: 1rem; font-size: 0.72em;">
+        Separar el plano de control del plano de cómputo es lo que hace el sistema escalable.
+      </p>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       4 · UNRAID
+  ════════════════════════════════════════════ -->
+  <section>
+    <div>
+      <span class="label">Infraestructura · Post 2</span>
+      <h2>Unraid: el OS del homelab</h2>
+      <ul>
+        <li><strong>Array con paridad flexible</strong> — mezcla discos de cualquier tamaño; si uno falla, el resto sigue</li>
+        <li><strong>Docker con GUI</strong> — Community Apps: Ollama, Postgres, Open WebUI en un clic</li>
+        <li><strong>GPU passthrough</strong> — AMD RX 9070 XT directo al contenedor de Ollama, sin overhead</li>
+        <li><strong>VMs KVM/QEMU</strong> — Windows para juegos, Linux para experimentos, en la misma máquina</li>
+      </ul>
+      <div class="chips">
+        <span class="chip">ollama/ollama</span>
+        <span class="chip">postgres:18</span>
+        <span class="chip">open-webui</span>
+        <span class="chip">metabase</span>
+        <span class="chip">uptime-kuma</span>
+        <span class="chip">watchtower</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       5 · INFRAESTRUCTURA (diagrama)
+  ════════════════════════════════════════════ -->
+  <section>
+    <div class="slide-diagram">
+      <span class="label">Infraestructura · Post 3</span>
+      <h2>Topología de red</h2>
+      <div class="diagram-wrap">
+        <div class="mermaid">
+flowchart TD
+    subgraph PI["Pi 5"]
+        GW["OpenClaw Gateway\n:18789 · systemd"]
+        CH["Chromium CDP\n:18800 · Xvfb"]
+        DB[("SQLite\ntools.db")]
+        GW --- CH
+        GW --- DB
+    end
+    subgraph SRV["Ryzen 5 · 9070 XT · 16GB"]
+        OL["Ollama :11434\nqwen3.5 · gemma4 · qwen2.5vl"]
+        PG[("Postgres 18\n:5432")]
+    end
+    GW -->|"HTTP"| OL
+    GW -->|"TCP"| PG
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       6 · OPENCLAW (diagrama)
+  ════════════════════════════════════════════ -->
+  <section>
+    <div class="slide-diagram">
+      <span class="label">OpenClaw · Post 4</span>
+      <h2>Arquitectura de tres capas</h2>
+      <div class="diagram-wrap">
+        <div class="mermaid">
+flowchart TD
+    C["Canal\nWhatsApp · Telegram · HTTP"]
+    subgraph GW["Gateway :18789"]
+        R["Router semántico"]
+        LF["LLM · qwen3.5:9b"]
+    end
+    subgraph SK["Skills"]
+        S1["mexico-noticias"]
+        S2["cdmx-tcg-events"]
+        S3["pokemon-dia"]
+        S4["tcg-deck-analyst"]
+    end
+    C -->|mensajes| GW
+    GW -->|invocación| SK
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       7 · SKILLS — reactivo / proactivo
+  ════════════════════════════════════════════ -->
+  <section>
+    <div>
+      <span class="label">Skills · Post 5</span>
+      <h2>Seis especialistas, dos modos</h2>
+      <div class="cols">
+        <div>
+          <span class="col-label">Pull — responde cuando preguntas</span>
+          <ul>
+            <li><code>mexico-noticias</code> — CDP · gemma4:26b</li>
+            <li><code>intl-noticias</code> — CDP · gemma4:e4b</li>
+            <li><code>maker-noticias</code> — RSS · gemma4:e4b</li>
+            <li><code>cdmx-tcg-events</code> — CDP + API</li>
+            <li><code>pokemon-dia</code> — PokeAPI</li>
+            <li><code>tcg-deck-analyst</code> — scraping</li>
+          </ul>
+        </div>
+        <div>
+          <span class="col-label">Push — envía sin que lo pidas</span>
+          <ul>
+            <li>7am: fetch noticias (4 fuentes)</li>
+            <li>8am: resumen → WhatsApp groups</li>
+            <li>5pm / 6pm: segundo ciclo</li>
+            <li>Pokémon del día</li>
+            <li>Sync incremental → Postgres</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       8 · AGENTES DE NOTICIAS (diagrama)
+  ════════════════════════════════════════════ -->
+  <section>
+    <div class="slide-diagram">
+      <span class="label">Agentes de noticias · Post 6</span>
+      <h2>El pipeline completo</h2>
+      <div class="diagram-wrap">
+        <div class="mermaid">
+flowchart TD
+    F["Fuentes de datos\nRSS feeds · sitios web"]
+    FE["Fetch — 7am y 5pm\nRSS parser + Chromium CDP"]
+    SU["LLM Summary\ngemma4:e4b · Ollama local"]
+    SE["Send — 8am y 6pm\nWhatsApp groups · notif. push"]
+    FA["Fetch article completo\nanti-bot · qwen2.5vl · visión"]
+    SY["Sync incremental\n→ Postgres Docker"]
+    F --> FE --> SU --> SE --> FA --> SY
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       9 · PERSISTENCIA (diagrama)
+  ════════════════════════════════════════════ -->
+  <section>
+    <div class="slide-diagram">
+      <span class="label">Persistencia · Post 7</span>
+      <h2>SQLite → Postgres</h2>
+      <div class="diagram-wrap">
+        <div class="mermaid">
+flowchart TD
+    subgraph PI["Pi 5"]
+        AG["Agente"] -->|escribe| SQ
+        SQ[("SQLite · 11 tablas\ncero latencia de red")]
+        WM["trigger: synced_at = NULL\nen cada UPDATE"]
+        SQ --> WM
+    end
+    WM -->|"sync ~1s post-send"| PG
+    subgraph SRV["LLM Server"]
+        PG[("Postgres 18 · Docker\nBI · dashboards · SQL analítico")]
+    end
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       10 · LECCIONES
+  ════════════════════════════════════════════ -->
+  <section>
+    <div>
+      <span class="label">Lecciones · Post 8</span>
+      <h2>Lo que aprendimos haciéndolo</h2>
+      <ul>
+        <li><strong>Secuencial &gt; paralelo</strong> — Ollama atiende una inferencia a la vez; el cuello de botella no es el orquestador</li>
+        <li><strong>Separar fetch de send</strong> — si el send falla, el fetch no se repite innecesariamente</li>
+        <li><strong>Watchdogs simples e idempotentes</strong> — si ya está corriendo, no lo inicies de nuevo</li>
+        <li><strong>Reintentos tolerantes al contexto</strong> — anti-bot no es lo mismo que timeout de API</li>
+        <li><strong>Los crons son agentes sin conversación</strong> — el reloj es el trigger, el script sabe exactamente qué hacer</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════
+       11 · FINAL
+  ════════════════════════════════════════════ -->
+  <section>
+    <div class="s-final">
+      <h1>La riqueza del sistema<br>no está en ningún<br>componente individual.</h1>
+      <div class="links">
+        <strong>Serie completa</strong>
+        oglabs.info/blog/serie-multiagente-homelab/<br>
+        <strong>GitHub</strong>
+        github.com/psyrax<br>
+        <strong>Estas slides</strong>
+        oglabs.info/slides/homelab.html
+      </div>
+    </div>
+  </section>
+
+</div><!-- /.slides -->
+</div><!-- /.reveal -->
+
+<script src="https://cdn.jsdelivr.net/npm/reveal.js@4.6.1/dist/reveal.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      background: '#060606',
+      primaryColor: '#1a1a1a',
+      primaryBorderColor: '#2e2e2e',
+      primaryTextColor: '#d4d4c8',
+      lineColor: '#4a4a48',
+      secondaryColor: '#111111',
+      tertiaryColor: '#0a0a0a',
+      clusterBkg: '#0d0d0d',
+      clusterBorder: '#252525',
+      titleColor: '#edeae2',
+      edgeLabelBackground: '#060606',
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: '16px',
+      nodeTextColor: '#d4d4c8',
+    }
+  });
+
+  // Scale SVG to fill container using both width AND height constraints
+  function fixDiagrams(slide) {
+    slide.querySelectorAll('.mermaid svg').forEach(function(svg) {
+      var el = svg.closest('.mermaid');
+      if (!el) return;
+      var wrap = el.closest('.diagram-wrap');
+      if (!wrap) return;
+
+      // Ensure viewBox is set from natural dimensions
+      var nw = parseFloat(svg.getAttribute('width'));
+      var nh = parseFloat(svg.getAttribute('height'));
+      if (nw && nh && !svg.getAttribute('viewBox')) {
+        svg.setAttribute('viewBox', '0 0 ' + nw + ' ' + nh);
+      }
+
+      var vb = svg.viewBox.baseVal;
+      var vbW = vb.width || nw;
+      var vbH = vb.height || nh;
+      if (!vbW || !vbH) return;
+
+      var cw = wrap.clientWidth  - 32;
+      var ch = wrap.clientHeight - 32;
+      if (!cw || !ch) return;
+
+      // Scale to fit — whichever dimension is the bottleneck
+      var scale = Math.min(cw / vbW, ch / vbH);
+      svg.setAttribute('width',  Math.round(vbW * scale));
+      svg.setAttribute('height', Math.round(vbH * scale));
+
+      // Center the SVG inside the mermaid container
+      el.style.cssText = 'display:flex;width:100%;height:100%;align-items:center;justify-content:center;';
+    });
+  }
+
+  // Render unrendered diagrams in slide, then fix all sizes
+  function renderSlide(slide) {
+    var unrendered = Array.from(slide.querySelectorAll('.mermaid')).filter(function(el) {
+      return !el.querySelector('svg');
+    });
+    if (unrendered.length) {
+      mermaid.run({ nodes: unrendered })
+        .then(function() { requestAnimationFrame(function() { fixDiagrams(slide); }); })
+        .catch(function(e) { console.warn('mermaid:', e); });
+    } else {
+      // Already rendered by a prior slidechanged event — just fix sizes
+      requestAnimationFrame(function() { fixDiagrams(slide); });
+    }
+  }
+
+  // Initialize Reveal first so slides have proper dimensions
+  Reveal.initialize({
+    hash: true,
+    progress: true,
+    controls: true,
+    controlsLayout: 'bottom-right',
+    slideNumber: 'c/t',
+    transition: 'fade',
+    transitionSpeed: 'slow',
+    width: 960,
+    height: 540,
+    margin: 0.04,
+    center: false,
+  }).then(function() {
+    renderSlide(Reveal.getCurrentSlide());
+  });
+
+  Reveal.on('slidechanged', function(e) {
+    renderSlide(e.currentSlide);
+  });
+</script>
+</body>
+</html>
