@@ -516,6 +516,24 @@ a:hover { color: #fff; }
   border-radius: 2px;
 }
 
+/* --- Mermaid diagrams --- */
+.article__content .mermaid {
+  margin: 2rem 0;
+  padding: 1.75rem 1rem;
+  background: #080808;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.article__content .mermaid svg {
+  max-width: 100%;
+  height: auto;
+  font-family: var(--font-mono);
+}
+
 /* --- Responsive --- */
 @media (max-width: 768px) {
   /* Nav */
