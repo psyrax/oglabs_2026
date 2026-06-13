@@ -651,3 +651,15 @@ a:hover { color: #fff; }
     border-right: none;
   }
 }
+
+/* ---- Wide data posts (frontmatter `Wide: true`) ---------------------------
+   Prose stays at the 700px column; data blocks break out to ~1100px.
+   Breakout technique works from the narrow column via translateX. */
+.article--wide .article__content table,
+.article--wide .article__content figure,
+.article--wide .article__content p:has(> img:only-child) {
+  width: min(1100px, 92vw);
+  max-width: none;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
