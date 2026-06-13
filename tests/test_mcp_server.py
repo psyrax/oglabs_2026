@@ -1,3 +1,4 @@
+import base64
 import importlib
 
 import pytest
@@ -298,3 +299,50 @@ def test_server_has_instructions():
 def test_publish_blog_post_prompt_includes_topic():
     text = mcp_server.publish_blog_post("mi tema")
     assert "mi tema" in text and "list_posts" in text
+
+
+def test_upload_image_writes_and_returns_markdown(repo, mocker):
+    mocker.patch("mcp_server._run", return_value={"ok": True})
+    data = base64.b64encode(b"\x89PNGfake").decode()
+    out = mcp_server.upload_image(data, "umap.png", alt="UMAP")
+    assert (repo / "content/images/umap.png").read_bytes() == b"\x89PNGfake"
+    assert out["markdown"] == "![UMAP](/images/umap.png)"
+    assert out["path"] == "content/images/umap.png"
+
+
+def test_upload_image_rejects_traversal(repo):
+    data = base64.b64encode(b"x").decode()
+    with pytest.raises(ValueError, match="Invalid"):
+        mcp_server.upload_image(data, "../secret.png")
+
+
+def test_upload_image_rejects_bad_extension(repo):
+    data = base64.b64encode(b"x").decode()
+    with pytest.raises(ValueError, match="extension"):
+        mcp_server.upload_image(data, "evil.exe")
+
+
+def test_upload_image_rejects_svg(repo):
+    # SVG can carry inline <script>; it is served inline → stored-XSS vector.
+    data = base64.b64encode(b"<svg onload=alert(1)></svg>").decode()
+    with pytest.raises(ValueError, match="extension"):
+        mcp_server.upload_image(data, "x.svg")
+
+
+def test_upload_image_rejects_bad_base64(repo):
+    with pytest.raises(ValueError, match="base64"):
+        mcp_server.upload_image("not base64!!!", "x.png")
+
+
+def test_upload_image_rejects_oversize(repo, mocker):
+    mocker.patch.object(mcp_server, "MAX_IMAGE_BYTES", 4)
+    data = base64.b64encode(b"toolong").decode()
+    with pytest.raises(ValueError, match="exceeds"):
+        mcp_server.upload_image(data, "x.png")
+
+
+def test_data_post_prompt_mentions_wide_and_charts():
+    text = mcp_server.data_post("clusters de audio")
+    assert "clusters de audio" in text
+    assert "Wide: true" in text
+    assert "@plotly" in text and "upload_image" in text

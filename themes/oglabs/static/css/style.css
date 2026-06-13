@@ -516,6 +516,24 @@ a:hover { color: #fff; }
   border-radius: 2px;
 }
 
+/* --- Mermaid diagrams --- */
+.article__content .mermaid {
+  margin: 2rem 0;
+  padding: 1.75rem 1rem;
+  background: #080808;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow-x: auto;
+  display: flex;
+  justify-content: center;
+}
+
+.article__content .mermaid svg {
+  max-width: 100%;
+  height: auto;
+  font-family: var(--font-mono);
+}
+
 /* --- Responsive --- */
 @media (max-width: 768px) {
   /* Nav */
@@ -632,4 +650,26 @@ a:hover { color: #fff; }
     border-left: none;
     border-right: none;
   }
+}
+
+/* ---- Wide data posts (frontmatter `Wide: true`) ---------------------------
+   Prose stays at the 700px column; data blocks break out to ~1100px.
+   Breakout technique works from the narrow column via translateX. */
+.article--wide .article__content table,
+.article--wide .article__content figure,
+.article--wide .article__content p:has(> img:only-child) {
+  width: min(1100px, 92vw);
+  max-width: none;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ---- Embedded charts ------------------------------------------------------ */
+.article__content figure.chart {
+  margin: 2rem 0;
+  background: #0d0d0d;
+}
+.article__content figure.chart > div {
+  width: 100%;
+  min-height: 320px;
 }

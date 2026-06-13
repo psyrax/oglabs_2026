@@ -3,6 +3,8 @@
 Exposes content management, the LLM/image pipeline, and build/deploy over
 streamable-HTTP so remote agents on the LAN can drive the blog.
 """
+import base64
+import binascii
 import os
 import re
 import subprocess
@@ -15,6 +17,12 @@ CONTENT_SECTIONS = {"blog", "projects", "photos"}
 PIPELINE_SECTIONS = {"blog", "projects", "all"}
 # Top-level dirs that read_post is allowed to read from.
 CONTENT_BASES = {"drafts", "content"}
+
+# Raster image types only. SVG is intentionally excluded: it can carry inline
+# <script>/event handlers and is served inline from /images/, so an uploaded SVG
+# would be a stored-XSS vector on the public site (and the optimizer is raster-only).
+ALLOWED_IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
+MAX_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MB
 
 # Full workflow reference. Surfaced verbatim by the guide() tool and the
 # publish_blog_post prompt; SERVER_INSTRUCTIONS below is the short version that
@@ -53,6 +61,17 @@ Mundial is auto-tagged at build and shown in the /projects/mundial/ subsection �
 no manual tag needed; just put "Mundial" in the title. deploy runs a secret
 scrubber over output/ before the S3 sync. The server is LAN-only and
 unauthenticated by design.
+
+Data posts (wide layout + charts + images)
+  - Set `Wide: true` in the frontmatter to widen tables/figures/charts to ~1100px
+    while prose stays readable.
+  - Embed charts as fenced code blocks whose first line is a marker:
+      @plotly      -> JSON { "data": [...], "layout": {...} }
+      @vega-lite   -> a Vega-Lite JSON spec
+      @d3          -> JS body; receives (container, d3)
+    Libraries load lazily in the browser; nothing to install.
+  - Add images with upload_image(data_base64, filename, alt) and paste the
+    returned markdown.
 """
 
 SERVER_INSTRUCTIONS = """\
@@ -66,6 +85,9 @@ confirmation: publish_draft_live. Remove posts with delete_post / delete_post_li
 deploy(), publish(), publish_draft_live() and delete_post_live() push to PRODUCTION
 and have no auth — always confirm with the user before calling them. Call guide()
 for the full workflow, or use the publish_blog_post prompt.
+
+Data posts: set `Wide: true`, embed charts via @plotly/@vega-lite/@d3 fenced
+blocks, and add images with upload_image. See the data_post prompt or guide().
 """
 
 mcp = FastMCP(
@@ -111,6 +133,17 @@ def _safe_slug(slug: str) -> str:
             f"Invalid slug {slug!r}. Use lowercase letters, digits, and hyphens."
         )
     return slug
+
+
+def _safe_image_filename(name: str) -> str:
+    """Reject path separators / traversal and non-image extensions."""
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", name) or ".." in name:
+        raise ValueError(f"Invalid filename {name!r}.")
+    if Path(name).suffix.lower() not in ALLOWED_IMAGE_EXT:
+        raise ValueError(
+            f"Unsupported image extension. Use one of {sorted(ALLOWED_IMAGE_EXT)}."
+        )
+    return name
 
 
 def _parse_frontmatter(text: str) -> dict:
@@ -300,6 +333,34 @@ def read_post(path: str) -> dict:
     return _parse_frontmatter(p.read_text())
 
 
+@mcp.tool()
+def upload_image(
+    data_base64: str, filename: str, alt: str = "", optimize: bool = True
+) -> dict:
+    """Save a base64-encoded image into content/images/ for use in posts.
+
+    Writes content/images/<filename>, runs the image optimizer, and returns a
+    ready-to-paste markdown snippet. Reference it in a post as the returned
+    `markdown`. Use a descriptive filename (e.g. "umap-clusters.png").
+    """
+    name = _safe_image_filename(filename)
+    try:
+        raw = base64.b64decode(data_base64, validate=True)
+    except (binascii.Error, ValueError):
+        raise ValueError("data_base64 is not valid base64.")
+    if len(raw) > MAX_IMAGE_BYTES:
+        raise ValueError(f"Image exceeds {MAX_IMAGE_BYTES} bytes.")
+    path = _repo_path("content", "images", name)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(raw)
+    result = _run(["python", "scripts/optimize_images.py"]) if optimize else None
+    return {
+        "path": f"content/images/{name}",
+        "markdown": f"![{alt}](/images/{name})",
+        "optimize": result,
+    }
+
+
 def _run(cmd: list[str]) -> dict:
     """Run a command from the repo root, returning a structured result."""
     proc = subprocess.run(
@@ -403,6 +464,22 @@ def publish_blog_post(tema: str) -> str:
         "con read_post(...) para captar el estilo. Propón el título al usuario, "
         "escribe el draft, y DETENTE para confirmar antes de cualquier paso de "
         "producción (deploy/publish/publish_draft_live)."
+    )
+
+
+@mcp.prompt()
+def data_post(tema: str) -> str:
+    """Guided workflow for an agent to build a data-heavy oglabs post (wide
+    layout + charts + images). `tema` is the topic."""
+    return (
+        f"## Tarea: armar un post de DATA en oglabs vía su MCP\n\n"
+        f"**Tema:** {tema}\n\n"
+        f"{WORKFLOW_GUIDE}\n"
+        "Para este post: poné `Wide: true` en el frontmatter; usá bloques "
+        "@plotly / @vega-lite / @d3 para los gráficos; subí PNGs (matplotlib, "
+        "etc.) con upload_image y pegá el markdown que devuelve. Estudiá el "
+        "estilo con list_posts/read_post, y DETENTE para confirmar antes de "
+        "cualquier paso de producción."
     )
 
 

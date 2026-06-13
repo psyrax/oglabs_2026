@@ -60,10 +60,13 @@ Transport: streamable-HTTP. No authentication (LAN only).
 
 ## Tools
 
-- Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`, `publish_draft`, `delete_draft`, `delete_post`
+- Content: `list_drafts`, `list_posts`, `read_post`, `create_draft`, `write_draft`, `publish_draft`, `delete_draft`, `delete_post`, `upload_image`
 - Pipeline: `improve_writing`, `optimize_images`, `process_photos`
 - Build/deploy: `build`, `deploy`, `publish`, `publish_draft_live`, `delete_post_live`
 - Discovery: `guide` (full workflow as text)
+
+See `docs/data-posts.md` for wide-layout, chart, and image conventions. The
+`data_post(tema)` prompt walks an agent through building a data post.
 
 For agent onboarding the server also ships an MCP-native **`instructions`** string
 (shown to every client on connect) and a **`publish_blog_post(tema)`** prompt that

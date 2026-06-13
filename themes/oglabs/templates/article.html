@@ -60,7 +60,7 @@
 
 {% else %}
   {# --- Blog / Project post --- #}
-  <article class="article">
+  <article class="article{% if article.wide|default('')|lower == 'true' %} article--wide{% endif %}">
     <header class="article__header">
       <h1 class="article__title">{{ article.title }}</h1>
       <p class="article__date">{{ fecha_larga(article.date) }}</p>

@@ -14,12 +14,88 @@
   {% block og_meta %}{% endblock %}
 </head>
 <body>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  // Pelican+Pygments renders mermaid blocks as <div.highlight><pre><code>...</code></pre></div>
+  // Detect them by content since there's no reliable CSS class after Pygments processing
+  const MERMAID_RE = /^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|gitGraph)\b/;
+  document.querySelectorAll('div.highlight > pre > code').forEach(code => {
+    const text = code.textContent.trim();
+    if (MERMAID_RE.test(text)) {
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = text;
+      code.closest('div.highlight').replaceWith(div);
+    }
+  });
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      background: '#0d0d0d',
+      primaryColor: '#161616',
+      primaryBorderColor: '#2e2e2e',
+      primaryTextColor: '#d4d4c8',
+      lineColor: '#4a4a48',
+      secondaryColor: '#111111',
+      tertiaryColor: '#0f0f0f',
+      clusterBkg: '#111111',
+      clusterBorder: '#252525',
+      titleColor: '#edeae2',
+      edgeLabelBackground: '#0d0d0d',
+      fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+      fontSize: '13px',
+      nodeTextColor: '#d4d4c8',
+    }
+  });
+  mermaid.run({ querySelector: '.mermaid' });
+</script>
+<script type="module">
+  // Lazy chart loader: render @plotly / @vega-lite / @d3 fenced blocks.
+  // Pygments drops the fence language, so detect by a first-line marker
+  // (same philosophy as the Mermaid loader above). Libraries load from a CDN
+  // only when a matching block is present on the page.
+  const cache = {};
+  const load = (k, url) => (cache[k] ||= import(url));
+  for (const code of document.querySelectorAll('div.highlight > pre > code')) {
+    const text = code.textContent.replace(/\n$/, '');
+    const nl = text.indexOf('\n');
+    const marker = (nl === -1 ? text : text.slice(0, nl)).trim();
+    const body = nl === -1 ? '' : text.slice(nl + 1);
+    if (!['@plotly', '@vega-lite', '@d3'].includes(marker)) continue;
+    const fig = document.createElement('figure');
+    fig.className = 'chart';
+    const target = document.createElement('div');
+    fig.appendChild(target);
+    code.closest('div.highlight').replaceWith(fig);
+    try {
+      if (marker === '@plotly') {
+        const Plotly = (await load('plotly', 'https://esm.sh/plotly.js-dist-min@2.35')).default;
+        const spec = JSON.parse(body);
+        Plotly.newPlot(target, spec.data || [], Object.assign({
+          template: 'plotly_dark', paper_bgcolor: '#0d0d0d', plot_bgcolor: '#0d0d0d',
+          font: { color: '#d4d4c8', family: 'JetBrains Mono, monospace' },
+          margin: { t: 30, r: 20, b: 40, l: 50 },
+        }, spec.layout || {}), { responsive: true, displayModeBar: false });
+      } else if (marker === '@vega-lite') {
+        const vegaEmbed = (await load('vega', 'https://esm.sh/vega-embed@6')).default;
+        await vegaEmbed(target, JSON.parse(body), { theme: 'dark', actions: false, renderer: 'svg' });
+      } else if (marker === '@d3') {
+        const d3 = await load('d3', 'https://esm.sh/d3@7');
+        new Function('container', 'd3', body)(target, d3);
+      }
+    } catch (e) {
+      target.innerHTML = '<pre style="color:#f88">Chart error: ' + (e && e.message) + '</pre>';
+    }
+  }
+</script>
   <nav class="site-nav">
     <a class="site-name" href="{{ SITEURL }}/">{{ SITENAME }}</a>
     <ul>
       <li><a href="{{ SITEURL }}/blog/" {% if active_section == 'blog' %}class="active"{% endif %}>blog</a></li>
       <li><a href="{{ SITEURL }}/projects/" {% if active_section == 'projects' %}class="active"{% endif %}>proyectos</a></li>
       <li><a href="{{ SITEURL }}/photos/" {% if active_section == 'photos' %}class="active"{% endif %}>fotos</a></li>
+      <li><a href="{{ SITEURL }}/slides/homelab.html">slides</a></li>
     </ul>
   </nav>
   <main>
