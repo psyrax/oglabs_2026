@@ -11,3 +11,12 @@ venv/
 photos/.processed_manifest.json
 drafts/.images_manifest.json
 .superpowers/
+
+# Slides: served copy is staged by `make slides`; Marp output is regenerable
+content/slides/
+slides/marp/
+
+# Slide-design iteration screenshots left in the repo root
+diag-*.png
+slide-*.png
+slides-*.png

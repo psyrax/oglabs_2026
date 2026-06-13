@@ -8,7 +8,7 @@ MCP_REPO_PATH ?= /mnt/user/appdata/oglabs
 MCP_IMAGE ?= oglabs-mcp:latest
 MCP_CONTAINER ?= oglabs-mcp
 
-.PHONY: photos images build deploy publish clean strip-fences mcp sync-host
+.PHONY: photos images slides build deploy publish clean strip-fences mcp sync-host
 
 # Process new gallery photos (skips already-processed via manifest)
 photos:
@@ -22,8 +22,14 @@ images:
 strip-fences:
 	python scripts/strip_fences.py
 
-# Full build: process photos + images, strip LLM artifacts, then run Pelican
-build: photos images strip-fences
+# Stage the live reveal deck into content/ so Pelican serves it.
+# Source of truth is slides/homelab.html; content/slides/ is a build artifact.
+slides:
+	mkdir -p content/slides
+	cp slides/homelab.html content/slides/homelab.html
+
+# Full build: process photos + images, stage slides, strip LLM artifacts, then run Pelican
+build: photos images slides strip-fences
 	pelican content -s pelicanconf.py -o output
 
 # Deploy to S3 and optionally invalidate CloudFront cache
@@ -72,6 +78,8 @@ sync-host:
 		--exclude='diag-*.png' \
 		--exclude='slide-*.png' \
 		--exclude='slides-*.png' \
+		--exclude='slides/marp/*.html' \
+		--exclude='content/slides/' \
 		./ $(MCP_HOST):$(MCP_REPO_PATH)/
 	ssh $(MCP_HOST) 'cd $(MCP_REPO_PATH) && \
 		docker build -t $(MCP_IMAGE) . && \

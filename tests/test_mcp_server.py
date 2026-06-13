@@ -218,6 +218,49 @@ def test_publish_draft_rejects_bad_slug(repo):
         mcp_server.publish_draft("blog", "../../etc/passwd")
 
 
+def test_delete_post_removes_published_file(repo):
+    mcp_server.write_draft("blog", "tmp", "Title: Tmp\n\nx")
+    mcp_server.publish_draft("blog", "tmp")
+    assert (repo / "content/blog/tmp.md").exists()
+    msg = mcp_server.delete_post("blog", "tmp")
+    assert not (repo / "content/blog/tmp.md").exists()
+    assert "deleted" in msg
+
+
+def test_delete_post_leaves_draft(repo):
+    mcp_server.write_draft("blog", "tmp", "x")
+    mcp_server.publish_draft("blog", "tmp")
+    mcp_server.delete_post("blog", "tmp")
+    # deleting the published post must not remove the draft
+    assert (repo / "drafts/blog/tmp.md").exists()
+
+
+def test_delete_post_missing_raises(repo):
+    with pytest.raises(ValueError, match="Post not found"):
+        mcp_server.delete_post("blog", "no-existe")
+
+
+def test_delete_post_rejects_bad_slug(repo):
+    with pytest.raises(ValueError, match="Invalid slug"):
+        mcp_server.delete_post("blog", "../../etc/passwd")
+
+
+def test_delete_post_live_removes_and_publishes(repo, mocker):
+    mcp_server.write_draft("blog", "p", "Title: P\n\nCuerpo.")
+    mcp_server.publish_draft("blog", "p")
+    run = mocker.patch("mcp_server._run", return_value={"ok": True, "returncode": 0})
+    result = mcp_server.delete_post_live("blog", "p")
+    assert not (repo / "content/blog/p.md").exists()
+    run.assert_called_once_with(["make", "publish"])
+    assert result["deleted"] == "deleted content/blog/p.md"
+    assert result["result"] == {"ok": True, "returncode": 0}
+
+
+def test_delete_post_live_missing_raises(repo):
+    with pytest.raises(ValueError, match="Post not found"):
+        mcp_server.delete_post_live("blog", "no-existe")
+
+
 def test_publish_draft_live_promotes_and_publishes(repo, mocker):
     mcp_server.write_draft("blog", "p", "Title: P\n\nCuerpo.")
     run = mocker.patch("mcp_server._run", return_value={"ok": True, "returncode": 0})
@@ -240,3 +283,18 @@ def test_build_deploy_tools(repo, mocker, tool, target):
     run = mocker.patch("mcp_server._run", return_value={"ok": True})
     getattr(mcp_server, tool)()
     run.assert_called_once_with(["make", target])
+
+
+def test_guide_returns_workflow():
+    g = mcp_server.guide()
+    assert "content/" in g and "publish_draft" in g
+
+
+def test_server_has_instructions():
+    assert mcp_server.mcp.instructions
+    assert "PRODUCTION" in mcp_server.mcp.instructions
+
+
+def test_publish_blog_post_prompt_includes_topic():
+    text = mcp_server.publish_blog_post("mi tema")
+    assert "mi tema" in text and "list_posts" in text
