@@ -58,6 +58,17 @@ Mundial is auto-tagged at build and shown in the /projects/mundial/ subsection �
 no manual tag needed; just put "Mundial" in the title. deploy runs a secret
 scrubber over output/ before the S3 sync. The server is LAN-only and
 unauthenticated by design.
+
+Data posts (wide layout + charts + images)
+  - Set `Wide: true` in the frontmatter to widen tables/figures/charts to ~1100px
+    while prose stays readable.
+  - Embed charts as fenced code blocks whose first line is a marker:
+      @plotly      -> JSON { "data": [...], "layout": {...} }
+      @vega-lite   -> a Vega-Lite JSON spec
+      @d3          -> JS body; receives (container, d3)
+    Libraries load lazily in the browser; nothing to install.
+  - Add images with upload_image(data_base64, filename, alt) and paste the
+    returned markdown.
 """
 
 SERVER_INSTRUCTIONS = """\
@@ -71,6 +82,9 @@ confirmation: publish_draft_live. Remove posts with delete_post / delete_post_li
 deploy(), publish(), publish_draft_live() and delete_post_live() push to PRODUCTION
 and have no auth — always confirm with the user before calling them. Call guide()
 for the full workflow, or use the publish_blog_post prompt.
+
+Data posts: set `Wide: true`, embed charts via @plotly/@vega-lite/@d3 fenced
+blocks, and add images with upload_image. See the data_post prompt or guide().
 """
 
 mcp = FastMCP(
@@ -447,6 +461,22 @@ def publish_blog_post(tema: str) -> str:
         "con read_post(...) para captar el estilo. Propón el título al usuario, "
         "escribe el draft, y DETENTE para confirmar antes de cualquier paso de "
         "producción (deploy/publish/publish_draft_live)."
+    )
+
+
+@mcp.prompt()
+def data_post(tema: str) -> str:
+    """Guided workflow for an agent to build a data-heavy oglabs post (wide
+    layout + charts + images). `tema` is the topic."""
+    return (
+        f"## Tarea: armar un post de DATA en oglabs vía su MCP\n\n"
+        f"**Tema:** {tema}\n\n"
+        f"{WORKFLOW_GUIDE}\n"
+        "Para este post: poné `Wide: true` en el frontmatter; usá bloques "
+        "@plotly / @vega-lite / @d3 para los gráficos; subí PNGs (matplotlib, "
+        "etc.) con upload_image y pegá el markdown que devuelve. Estudiá el "
+        "estilo con list_posts/read_post, y DETENTE para confirmar antes de "
+        "cualquier paso de producción."
     )
 
 

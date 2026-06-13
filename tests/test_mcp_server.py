@@ -332,3 +332,10 @@ def test_upload_image_rejects_oversize(repo, mocker):
     data = base64.b64encode(b"toolong").decode()
     with pytest.raises(ValueError, match="exceeds"):
         mcp_server.upload_image(data, "x.png")
+
+
+def test_data_post_prompt_mentions_wide_and_charts():
+    text = mcp_server.data_post("clusters de audio")
+    assert "clusters de audio" in text
+    assert "Wide: true" in text
+    assert "@plotly" in text and "upload_image" in text
