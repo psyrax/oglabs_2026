@@ -663,3 +663,13 @@ a:hover { color: #fff; }
   margin-left: 50%;
   transform: translateX(-50%);
 }
+
+/* ---- Embedded charts ------------------------------------------------------ */
+.article__content figure.chart {
+  margin: 2rem 0;
+  background: #0d0d0d;
+}
+.article__content figure.chart > div {
+  width: 100%;
+  min-height: 320px;
+}
