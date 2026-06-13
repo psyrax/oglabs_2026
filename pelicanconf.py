@@ -22,10 +22,19 @@ CATEGORY_URL = '{slug}/'
 CATEGORY_SAVE_AS = '{slug}/index.html'
 
 # Static assets: fotos de galería + imágenes de posts de blog/proyectos
-STATIC_PATHS = ['photos/images', 'images']
+STATIC_PATHS = ['photos/images', 'images', 'slides']
 
-# Disable unused pages
-PAGE_PATHS = []
+# Pages (section landing pages like /projects/mundial/)
+PAGE_PATHS = ['pages']
+PAGE_URL = '{slug}/'
+PAGE_SAVE_AS = '{slug}/index.html'
+
+# Tags are used only to group posts in custom templates; the theme has no
+# tag/author templates, so disable those auto-generated pages.
+TAG_SAVE_AS = ''
+TAGS_SAVE_AS = ''
+AUTHOR_SAVE_AS = ''
+AUTHORS_SAVE_AS = ''
 
 # Delete stale files from output on each build
 DELETE_OUTPUT_DIRECTORY = True

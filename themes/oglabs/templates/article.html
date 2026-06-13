@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_helpers.html" import fecha_larga %}
 {% set active_section = article.category.slug %}
 
 {% block title %}{{ article.title }} — {{ SITENAME }}{% endblock %}
@@ -62,7 +63,7 @@
   <article class="article">
     <header class="article__header">
       <h1 class="article__title">{{ article.title }}</h1>
-      <p class="article__date">{{ article.date.strftime('%d %b %Y') }}</p>
+      <p class="article__date">{{ fecha_larga(article.date) }}</p>
     </header>
     <div class="article__content">
       {{ article.content }}

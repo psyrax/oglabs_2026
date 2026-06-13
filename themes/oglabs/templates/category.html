@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_helpers.html" import fecha_larga %}
 {% set active_section = category.slug %}
 
 {% block title %}{{ category.name }} — {{ SITENAME }}{% endblock %}
@@ -25,18 +26,42 @@
     {% endfor %}
   </div>
 {% else %}
+  {# In Proyectos, the Mundial 2026 posts live in their own subsection
+     (/projects/mundial/); show a single entry point instead of listing them. #}
+  {% set is_projects = category.slug == 'projects' %}
+  {% set ns = namespace(mundial=0) %}
+  {% if is_projects %}
+    {% for a in articles %}
+      {% if a.tags and 'mundial' in (a.tags | map('string') | list) %}
+        {% set ns.mundial = ns.mundial + 1 %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
   <div class="post-list">
     <p class="post-list__title">{{ category.name }}</p>
+
+    {% if is_projects and ns.mundial %}
+    <div class="post-list__item post-list__item--section">
+      <div class="post-list__item-header">
+        <a class="post-list__item-title" href="{{ SITEURL }}/projects/mundial/">Mundial 2026 →</a>
+        <span class="post-list__item-date">{{ ns.mundial }} posts</span>
+      </div>
+      <p class="post-list__item-excerpt">Modelos de predicción, pronósticos y verificación de resultados del Mundial FIFA 2026.</p>
+    </div>
+    {% endif %}
+
     {% for article in articles | sort(attribute="date", reverse=True) %}
+    {% if not (is_projects and article.tags and 'mundial' in (article.tags | map('string') | list)) %}
     <div class="post-list__item">
       <div class="post-list__item-header">
         <a class="post-list__item-title" href="{{ SITEURL }}/{{ article.url }}">{{ article.title }}</a>
-        <span class="post-list__item-date">{{ article.date.strftime('%b %Y') }}</span>
+        <span class="post-list__item-date">{{ fecha_larga(article.date) }}</span>
       </div>
       {% if article.summary %}
       <p class="post-list__item-excerpt">{{ article.summary | striptags | truncate(160) }}</p>
       {% endif %}
     </div>
+    {% endif %}
     {% endfor %}
   </div>
 {% endif %}

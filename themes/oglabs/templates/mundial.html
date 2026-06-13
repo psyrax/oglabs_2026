@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_helpers.html" import fecha_larga %}
+{% set active_section = 'projects' %}
+
+{% block title %}{{ page.title }} — {{ SITENAME }}{% endblock %}
+{% block og_title %}{{ page.title }} — {{ SITENAME }}{% endblock %}
+
+{% block content %}
+{% set mundial_posts = [] %}
+{% for a in articles %}
+  {% if a.tags and 'mundial' in (a.tags | map('string') | list) %}
+    {% set _ = mundial_posts.append(a) %}
+  {% endif %}
+{% endfor %}
+
+<div class="post-list">
+  <p class="post-list__subtitle"><a href="{{ SITEURL }}/projects/">← Proyectos</a></p>
+  <p class="post-list__title">{{ page.title }}</p>
+  {% if page.content %}<div class="post-list__intro">{{ page.content }}</div>{% endif %}
+
+  {% for article in mundial_posts | sort(attribute="date", reverse=True) %}
+  <div class="post-list__item">
+    <div class="post-list__item-header">
+      <a class="post-list__item-title" href="{{ SITEURL }}/{{ article.url }}">{{ article.title }}</a>
+      <span class="post-list__item-date">{{ fecha_larga(article.date) }}</span>
+    </div>
+    {% if article.summary %}
+    <p class="post-list__item-excerpt">{{ article.summary | striptags | truncate(160) }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,10 @@
+{# Reusable Jinja macros for the oglabs theme. #}
+
+{# Long Spanish date, e.g. "13 de junio de 2026". Locale-independent
+   (the host has no es_ES locale), so month names are mapped manually. #}
+{% macro fecha_larga(d) -%}
+{%- set meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio',
+                 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre',
+                 'diciembre'] -%}
+{{ d.day }} de {{ meses[d.month - 1] }} de {{ d.year }}
+{%- endmacro %}
