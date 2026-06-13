@@ -48,8 +48,11 @@ Removing a post
   - delete_post_live(section, slug) — removes it AND runs publish so it disappears
     from production in one call.
 
-Sections: blog, projects, photos. deploy runs a secret scrubber over output/
-before the S3 sync. The server is LAN-only and unauthenticated by design.
+Sections: blog, projects, photos. A `projects` post whose title mentions the
+Mundial is auto-tagged at build and shown in the /projects/mundial/ subsection —
+no manual tag needed; just put "Mundial" in the title. deploy runs a secret
+scrubber over output/ before the S3 sync. The server is LAN-only and
+unauthenticated by design.
 """
 
 SERVER_INSTRUCTIONS = """\
